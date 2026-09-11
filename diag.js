@@ -19,7 +19,7 @@
       "Браузер: " + navigator.userAgent + NL +
       "WebGL: " + webglState() + NL + NL +
       "Ошибки:" + NL + (errors.length ? errors.join(NL) : "(не зафиксировано — похоже, модуль не выполнился)") + NL + NL +
-      "Что попробовать: обновить страницу с очисткой кэша (Cmd+Shift+R), открыть в Chrome, обновить Safari.";
+      "Что попробовать: в Safari — обновить без кэша: Cmd+Option+R (или Shift+клик по кнопке обновления); либо открыть в приватном окне (Cmd+Shift+N); либо открыть в Chrome; либо обновить Safari.";
   }
   window.addEventListener("error", function (e) {
     errors.push((e.message || "ошибка") + (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno : ""));
