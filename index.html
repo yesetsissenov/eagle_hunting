@@ -175,7 +175,7 @@
     <div id="carryInfo"></div>
     <div id="homeArrow">⬆</div>
     <div id="msgs"></div>
-    <div id="hintLine"><kbd>←</kbd><kbd>→</kbd> вираж · <kbd>↑</kbd> выше · <kbd>↓</kbd> пике · <kbd>V</kbd> зоркий глаз</div>
+    <div id="hintLine"><kbd>←</kbd><kbd>→</kbd> вираж · <kbd>↑</kbd> разгон · <kbd>↓</kbd> пике · <kbd>V</kbd>+клик — взять зверька в прицел</div>
     <div id="tut"></div>
     <div id="skipHint">тап / любая клавиша — пропустить</div>
     <div id="altWrap"><div id="altDot"></div></div>
@@ -196,8 +196,9 @@
     <div id="menuCoins">🪙 0</div>
     <div id="locGrid"></div>
     <button id="btnFly">ЛЕТЕТЬ</button>
-    <div id="ctrlHelp"><kbd>←</kbd><kbd>→</kbd> вираж &nbsp; <kbd>↑</kbd> набор высоты &nbsp; <kbd>↓</kbd> пике &nbsp; <kbd>V</kbd> удерживать — зоркий глаз &nbsp; <kbd>Esc</kbd> меню<br>
-      на тачскрине: экранные стрелки или веди пальцем, кнопка 👁 — зрение</div>
+    <div id="ctrlHelp">Высоту беркут держит сам. <kbd>←</kbd><kbd>→</kbd> вираж &nbsp; <kbd>↑</kbd> разгон &nbsp; <kbd>↓</kbd> пике &nbsp; <kbd>Esc</kbd> меню<br>
+      <kbd>V</kbd> (или 👁) — зоркий глаз: кликни зверька, чтобы взять в прицел — беркут сам довернёт к нему<br>
+      на тачскрине: экранные стрелки или веди пальцем</div>
   </div>
 </div>
 
@@ -237,46 +238,98 @@ const store = {
 const LOCS = {
   steppe: {
     name: "СТЕПЬ САРЫАРКА", em: "🌾", price: 0, mult: 1,
-    skyTop: [126, 178, 216], skyBot: [235, 238, 218],
-    far: [205, 196, 150], near: [156, 148, 92],
+    skyTop: [110, 168, 214], skyMid: [176, 208, 228], skyBot: [240, 238, 214],
+    far: [205, 196, 150], near: [150, 142, 88],
     ridges: [{ c: "#b9ad84", b: 10, a: 16, f: 1.7 }, { c: "#a99d72", b: 0, a: 10, f: 2.6 }],
-    decor: { grass: 130, stone: 40, shrub: 30, yurt: 8, flower: 20 },
+    decor: { grass: 150, stone: 40, shrub: 34, yurt: 8, flower: 24 },
     animals: { mouse: 3, hamster: 3, hare: 3, rabbit: 3 },
   },
   alatau: {
     name: "ГОРЫ АЛАТАУ", em: "🏔", price: 150, mult: 1.2,
-    skyTop: [104, 164, 214], skyBot: [226, 238, 240],
-    far: [150, 176, 132], near: [104, 140, 88],
-    ridges: [{ c: "#e8eef4", b: 26, a: 44, f: 1.2 }, { c: "#7d94ac", b: 10, a: 30, f: 1.8 }, { c: "#5e7a62", b: 0, a: 16, f: 2.8 }],
-    decor: { fir: 70, rock: 50, grass: 90, flower: 25 },
+    skyTop: [86, 150, 210], skyMid: [158, 198, 226], skyBot: [228, 238, 240],
+    far: [150, 176, 132], near: [98, 136, 84],
+    ridges: [{ c: "#e8eef4", b: 26, a: 46, f: 1.2 }, { c: "#7d94ac", b: 10, a: 30, f: 1.8 }, { c: "#5e7a62", b: 0, a: 16, f: 2.8 }],
+    decor: { fir: 90, rock: 55, grass: 100, flower: 28 },
     animals: { marmot: 4, hare: 3, rabbit: 2, fox: 2 },
   },
   assy: {
     name: "ПЛАТО АССЫ", em: "🔭", price: 300, mult: 1.4,
-    skyTop: [96, 150, 210], skyBot: [222, 232, 238],
-    far: [168, 174, 128], near: [118, 128, 80],
-    ridges: [{ c: "#dfe7ee", b: 20, a: 36, f: 1.1 }, { c: "#8a9a92", b: 6, a: 20, f: 2.2 }],
-    decor: { grass: 120, flower: 60, stone: 40, dome: 3, shrub: 20 },
+    skyTop: [80, 142, 206], skyMid: [150, 190, 222], skyBot: [224, 232, 236],
+    far: [168, 174, 128], near: [112, 124, 76],
+    ridges: [{ c: "#dfe7ee", b: 20, a: 38, f: 1.1 }, { c: "#8a9a92", b: 6, a: 20, f: 2.2 }],
+    decor: { grass: 140, flower: 70, stone: 44, dome: 3, shrub: 22 },
     animals: { marmot: 5, hare: 3, mouse: 2, fox: 1 },
+  },
+  ili: {
+    name: "РЕКА ИЛИ", em: "🛶", price: 350, mult: 1.3,
+    skyTop: [104, 162, 212], skyMid: [172, 204, 224], skyBot: [238, 236, 210],
+    far: [196, 188, 140], near: [140, 138, 84],
+    ridges: [{ c: "#b4a87e", b: 8, a: 14, f: 1.9 }, { c: "#a0966c", b: 0, a: 9, f: 3 }],
+    decor: { grass: 120, shrub: 50, pine: 30, stone: 26, flower: 16 },
+    river: true,
+    animals: { hare: 3, rabbit: 3, fox: 2, mouse: 2 },
+  },
+  balkhash: {
+    name: "ОЗЕРО БАЛХАШ", em: "🌊", price: 400, mult: 1.5,
+    skyTop: [92, 158, 212], skyMid: [166, 206, 228], skyBot: [234, 240, 226],
+    far: [212, 200, 156], near: [166, 152, 102],
+    ridges: [{ c: "#b8ac82", b: 6, a: 10, f: 2 }],
+    decor: { grass: 80, stone: 40, dryshrub: 50 },
+    sea: true,
+    animals: { hare: 3, mouse: 3, hamster: 3, fox: 1 },
   },
   kolsai: {
     name: "ОЗЁРА КОЛЬСАЙ", em: "🏞", price: 500, mult: 1.6,
-    skyTop: [88, 152, 200], skyBot: [214, 232, 230],
-    far: [120, 150, 110], near: [76, 112, 70],
-    ridges: [{ c: "#c8d8e2", b: 24, a: 40, f: 1.3 }, { c: "#4e6e56", b: 8, a: 26, f: 3.2 }],
-    decor: { pine: 90, rock: 30, grass: 80, lake: 3 },
+    skyTop: [72, 140, 198], skyMid: [140, 188, 216], skyBot: [216, 232, 228],
+    far: [120, 150, 110], near: [70, 108, 66],
+    ridges: [{ c: "#c8d8e2", b: 24, a: 42, f: 1.3 }, { c: "#4e6e56", b: 8, a: 26, f: 3.2 }],
+    decor: { pine: 110, rock: 34, grass: 90, lake: 3 },
     animals: { fox: 3, hare: 4, rabbit: 3, mouse: 1 },
+  },
+  kaiyndy: {
+    name: "ОЗЕРО КАИНДЫ", em: "🌲", price: 600, mult: 1.7,
+    skyTop: [70, 136, 196], skyMid: [136, 184, 214], skyBot: [212, 230, 226],
+    far: [126, 152, 112], near: [76, 112, 70],
+    ridges: [{ c: "#d2dee8", b: 22, a: 40, f: 1.25 }, { c: "#54705a", b: 6, a: 24, f: 3 }],
+    decor: { pine: 100, rock: 36, grass: 80 },
+    kaiyndy: true,
+    animals: { fox: 3, marmot: 3, hare: 3, rabbit: 2 },
+  },
+  altynemel: {
+    name: "АЛТЫН-ЭМЕЛЬ", em: "🐫", price: 700, mult: 1.8,
+    skyTop: [110, 164, 210], skyMid: [186, 208, 222], skyBot: [246, 234, 204],
+    far: [224, 202, 158], near: [186, 156, 108],
+    ridges: [{ c: "#c9a97c", b: 14, a: 24, f: 1.6 }, { c: "#b08e60", b: 2, a: 14, f: 2.6 }],
+    decor: { dryshrub: 60, stone: 40, grass: 50 },
+    features: [
+      { type: "dune", x: 1500, z: 2200, s: 5 }, { type: "dune", x: 2200, z: 2700, s: 3.4 },
+      { type: "aktau", x: 3200, z: 1200, s: 4 }, { type: "aktau", x: 3600, z: 1700, s: 3 }, { type: "aktau", x: 600, z: 3400, s: 3.4 },
+    ],
+    animals: { fox: 2, hare: 3, mouse: 3, hamster: 2 },
   },
   charyn: {
     name: "ЧАРЫНСКИЙ КАНЬОН", em: "🏜", price: 800, mult: 2,
-    skyTop: [120, 168, 208], skyBot: [244, 228, 200],
-    far: [216, 178, 132], near: [176, 130, 86],
+    skyTop: [108, 160, 206], skyMid: [186, 202, 214], skyBot: [246, 228, 198],
+    far: [216, 178, 132], near: [170, 124, 80],
     ridges: [{ c: "#c98a5c", b: 18, a: 30, f: 1.5, mesa: true }, { c: "#a86a44", b: 4, a: 20, f: 2.4, mesa: true }],
-    decor: { pillar: 40, stone: 50, dryshrub: 50, grass: 30 },
+    decor: { pillar: 46, stone: 55, dryshrub: 55, grass: 30 },
     animals: { fox: 3, mouse: 3, hamster: 3, hare: 2 },
   },
+  bozzhyra: {
+    name: "БОЗЖЫРА · МАНГЫСТАУ", em: "🗿", price: 1000, mult: 2.2,
+    skyTop: [116, 162, 204], skyMid: [192, 206, 214], skyBot: [248, 238, 216],
+    far: [228, 214, 184], near: [196, 176, 138],
+    ridges: [{ c: "#e8e0d0", b: 16, a: 30, f: 1.4, mesa: true }, { c: "#cfc2a8", b: 2, a: 16, f: 2.2, mesa: true }],
+    decor: { stone: 60, dryshrub: 46 },
+    features: [
+      { type: "fang", x: 1400, z: 2400, s: 5 }, { type: "fang", x: 1750, z: 2550, s: 4 },
+      { type: "fang", x: 3000, z: 900, s: 3.2 }, { type: "mesaRock", x: 700, z: 3200, s: 4 },
+      { type: "mesaRock", x: 2600, z: 3600, s: 3 },
+    ],
+    animals: { fox: 3, mouse: 4, hamster: 3 },
+  },
 };
-const LOC_ORDER = ["steppe", "alatau", "assy", "kolsai", "charyn"];
+const LOC_ORDER = ["steppe", "alatau", "assy", "ili", "balkhash", "kolsai", "kaiyndy", "altynemel", "charyn", "bozzhyra"];
 
 /* ---------- зверьки ---------- */
 const ANIMALS = {
@@ -333,7 +386,7 @@ const snd = {
 
 /* ---------- состояние ---------- */
 const LOOP = 4200;
-const G = { state: "menu", coins: store.coins, locKey: store.loc, t: 0 };
+const G = { state: "menu", coins: store.coins, locKey: store.loc, t: 0, target: null };
 if (!store.unlocked.includes(G.locKey)) G.locKey = "steppe";
 
 const E = { // беркут
@@ -378,8 +431,38 @@ function buildWorld() {
       });
     }
   }
+  // фирменные объекты локации
+  if (L.features) for (const f of L.features) decors.push({ ...f, seed: Math.random() });
+  if (L.river) { // извилистая река через всю карту
+    for (let i = 0; i < 30; i++) {
+      const z = i * (LOOP / 30);
+      const x = (LOOP * 0.55 + Math.sin(z * 0.0021) * 620 + Math.sin(z * 0.0007) * 300 + LOOP) % LOOP;
+      decors.push({ type: "water", x, z, s: 1.7 + Math.sin(i * 1.7) * 0.3, seed: Math.random() });
+      if (i % 3 === 0) decors.push({ type: "shrub", x: x + 150 + Math.random() * 80, z: z + 40, s: 1, seed: Math.random() });
+    }
+  }
+  if (L.sea) { // Балхаш: большая бирюзовая вода на полкарты
+    for (let gx = 0; gx < 5; gx++) for (let gz = 0; gz < 4; gz++) {
+      decors.push({
+        type: "water", x: 1300 + gx * 520 + Math.random() * 160, z: 1500 + gz * 460 + Math.random() * 140,
+        s: 3.4 + Math.random(), seed: Math.random(),
+      });
+    }
+    for (let i = 0; i < 14; i++) decors.push({ // белые солончаковые берега
+      type: "salt", x: 1100 + Math.random() * 2800, z: 1250 + Math.random() * 200 * (Math.random() < 0.5 ? 1 : -0.6), s: 1.5 + Math.random(), seed: Math.random(),
+    });
+  }
+  if (L.kaiyndy) { // Каинды: озеро с торчащими из воды стволами елей
+    const kx = 1600, kz = 2100;
+    decors.push({ type: "water", x: kx, z: kz, s: 3.6, seed: 0.3 });
+    decors.push({ type: "water", x: kx + 320, z: kz + 180, s: 2.6, seed: 0.6 });
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * 7, r = Math.random() * 320;
+      decors.push({ type: "deadtree", x: kx + Math.sin(a) * r, z: kz + Math.cos(a) * r * 0.6, s: 0.8 + Math.random() * 0.6, seed: Math.random() });
+    }
+  }
   // не ставить декор на базу охотника
-  decors = decors.filter(d => d.type === "lake" || dist(d.x, d.z, 0, 0) > 160);
+  decors = decors.filter(d => ["lake", "water", "salt"].includes(d.type) || dist(d.x, d.z, 0, 0) > 160);
   // облака и пятна травостоя — во всех локациях
   for (let i = 0; i < 9; i++) decors.push({
     type: "cloud", x: Math.random() * LOOP, z: Math.random() * LOOP,
@@ -433,9 +516,30 @@ addEventListener("keyup", (e) => {
 });
 
 let steer = 0, pitchTouch = 0, ptrId = null, ptrX = 0, ptrY = 0;
+function pickAnimal(mx, my) {
+  let best = null, bd = 48;
+  for (const a of animals) {
+    if (a.state === "gone") continue;
+    const p = project(a.x, a.z);
+    if (!p) continue;
+    const d = Math.hypot(p.x - mx, p.y - my);
+    if (d < bd) { bd = d; best = a; }
+  }
+  return best;
+}
+
 cv.addEventListener("pointerdown", (e) => {
   snd.ensure();
   if (G.state === "launch") { beginFly(); return; }
+  // в режиме зоркого глаза клик по зверьку берёт его в прицел
+  if (G.state === "fly" && E.vision) {
+    const hit = pickAnimal(e.clientX, e.clientY);
+    if (hit) {
+      G.target = hit === G.target ? null : hit;
+      if (G.target) { snd.beep(880, 0.12); msg(`🎯 Цель: ${ANIMALS[hit.sp].name} — беркут сам довернёт`); }
+      return;
+    }
+  }
   ptrId = e.pointerId; ptrX = e.clientX; ptrY = e.clientY;
 });
 addEventListener("pointermove", (e) => {
@@ -473,9 +577,10 @@ const elAltDot = document.getElementById("altDot");
 
 /* ---------- обучение ---------- */
 const TUT_STEPS = [
-  { html: 'Веди беркута: <kbd>←</kbd><kbd>→</kbd>, стрелки на экране или палец', check: (dt) => Math.abs(E.bank) > 0.35 ? dt : 0, need: 0.7 },
-  { html: 'Пикируй: <kbd>↓</kbd> — хватай зверька у самой земли', check: (dt) => E.diving ? dt : 0, need: 0.6 },
-  { html: 'Зоркий глаз: удерживай <kbd>V</kbd> или 👁 — добыча подсветится', check: (dt) => E.vision ? dt : 0, need: 0.5 },
+  { html: 'Беркут летит сам. Поворот: <kbd>←</kbd><kbd>→</kbd>, стрелки на экране или палец', check: (dt) => Math.abs(E.bank) > 0.35 ? dt : 0, need: 0.7 },
+  { html: 'Разгон: держи <kbd>↑</kbd> — беркут полетит быстрее', check: (dt) => E.speed > 300 ? dt : 0, need: 0.6 },
+  { html: 'Зоркий глаз: держи <kbd>V</kbd>/👁 и <b>кликни зверька</b> — возьмёшь в прицел', check: (dt) => G.target ? 1 : 0, need: 0.5 },
+  { html: 'Беркут сам ведёт к цели. Рядом с ней жми <kbd>↓</kbd> — пике к земле!', check: (dt) => E.diving ? dt : 0, need: 0.5 },
   { html: 'Поймал — неси охотнику по стрелке ⬆, он заплатит монетами', check: (dt) => dt, need: 6 },
 ];
 const tut = { on: false, i: 0, acc: 0, flash: 0 };
@@ -560,6 +665,7 @@ function startFlight() {
   buildWorld();
   E.x = 0; E.z = 140; E.heading = 0; E.alt = 150; E.bank = 0;
   E.carrying = null; E.focus = 1; E.vision = false;
+  G.target = null;
   G.state = "launch";
   G.launchT = 0;
   menu.classList.add("hidden");
@@ -593,21 +699,29 @@ function toggleMenu() {
 
 /* ---------- логика полёта ---------- */
 function updateEagle(dt) {
-  const turnIn = (keys.ArrowLeft || keys.KeyA || vKeys.left ? -1 : 0) + (keys.ArrowRight || keys.KeyD || vKeys.right ? 1 : 0) + steer;
+  let turnIn = (keys.ArrowLeft || keys.KeyA || vKeys.left ? -1 : 0) + (keys.ArrowRight || keys.KeyD || vKeys.right ? 1 : 0) + steer;
+  // автоведение к выбранной цели
+  if (G.target && G.target.state !== "gone" && !E.carrying) {
+    const dx = wrap(G.target.x - E.x), dz = wrap(G.target.z - E.z);
+    let da = Math.atan2(dx, dz) - E.heading;
+    da = wrapAngle(da);
+    if (Math.abs(turnIn) < 0.15) turnIn = Math.max(-0.8, Math.min(0.8, da * 2.2));
+  }
   E.bank += (Math.max(-1, Math.min(1, turnIn)) - E.bank) * Math.min(1, dt * 6);
   E.heading += E.bank * 1.5 * dt;
 
-  const pitchIn = (keys.ArrowUp || keys.KeyW || vKeys.up ? -1 : 0) + (keys.ArrowDown || keys.KeyS || vKeys.down ? 1 : 0) + pitchTouch;
-  E.diving = pitchIn > 0.3;
+  // высота — автоматом: беркут сам держит крейсерский полёт,
+  // ↑ — разгон, ↓ — пике к земле
+  const boost = keys.ArrowUp || keys.KeyW || vKeys.up || pitchTouch < -0.4;
+  E.diving = !!(keys.ArrowDown || keys.KeyS || vKeys.down || pitchTouch > 0.4);
   if (E.diving) {
-    E.alt -= 260 * dt;
-    E.speed += (430 - E.speed) * Math.min(1, dt * 2.5);
-  } else if (pitchIn < -0.3) {
-    E.alt += 130 * dt;
-    E.speed += (190 - E.speed) * Math.min(1, dt * 2);
+    E.alt -= 300 * dt;
+    E.speed += (480 - E.speed) * Math.min(1, dt * 2.8);
   } else {
-    E.alt += 14 * dt; // плавное выравнивание вверх
-    E.speed += (240 - E.speed) * Math.min(1, dt * 1.5);
+    const cruise = 150;
+    E.alt += (cruise - E.alt) * Math.min(1, dt * 1.1);
+    const target = boost ? 360 : 235;
+    E.speed += (target - E.speed) * Math.min(1, dt * 1.8);
   }
   E.alt = Math.max(20, Math.min(330, E.alt));
 
@@ -634,6 +748,7 @@ function updateEagle(dt) {
       if (dist(E.x, E.z, a.x, a.z) < sp.radius + 14) {
         E.carrying = a.sp;
         a.state = "gone"; a.respawnT = 6 + Math.random() * 6;
+        G.target = null;
         snd.catch();
         msg(`Схватил! ${sp.name} в когтях — неси беркутчи 🏠`);
         break;
@@ -678,12 +793,13 @@ function updateAnimals(dt) {
       a.z += Math.cos(a.dir) * sp.spd * dt;
       if (a.fleeT <= 0) {
         a.state = "gone"; a.respawnT = 5 + Math.random() * 8;
-        if (dEagle < 420) msg(`${sp.name[0].toUpperCase() + sp.name.slice(1)} юркнул в нору…`);
+        if (G.target === a) { G.target = null; msg("Цель ушла в нору… выбери новую"); }
+        else if (dEagle < 420) msg(`${sp.name[0].toUpperCase() + sp.name.slice(1)} юркнул в нору…`);
       }
     }
     a.x = (a.x % LOOP + LOOP) % LOOP;
     a.z = (a.z % LOOP + LOOP) % LOOP;
-    if (dEagle > 2500) Object.assign(a, makeAnimal(true));
+    if (dEagle > 2500) { if (G.target === a) G.target = null; Object.assign(a, makeAnimal(true)); }
   }
 }
 
@@ -696,6 +812,7 @@ function drawSkyGround() {
   const L = LOCS[G.locKey];
   let g = ctx.createLinearGradient(0, 0, 0, HOR);
   g.addColorStop(0, mixc(L.skyTop, L.skyTop, 0));
+  g.addColorStop(0.62, mixc(L.skyMid || L.skyBot, L.skyMid || L.skyBot, 0));
   g.addColorStop(1, mixc(L.skyBot, L.skyBot, 0));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, HOR + 1);
@@ -726,6 +843,12 @@ function drawSkyGround() {
   g.addColorStop(1, mixc(L.near, L.near, 0));
   ctx.fillStyle = g;
   ctx.fillRect(0, HOR, W, H - HOR);
+  // атмосферная дымка у горизонта
+  const hz = ctx.createLinearGradient(0, HOR, 0, HOR + H * 0.2);
+  hz.addColorStop(0, `rgba(${L.skyBot[0]},${L.skyBot[1]},${L.skyBot[2]},.75)`);
+  hz.addColorStop(1, `rgba(${L.skyBot[0]},${L.skyBot[1]},${L.skyBot[2]},0)`);
+  ctx.fillStyle = hz;
+  ctx.fillRect(0, HOR, W, H * 0.2);
 }
 function wrapAngle(a) {
   a %= Math.PI * 2;
@@ -740,7 +863,99 @@ function drawDecor(d, p) {
   const x = p.x, y = p.y;
   ctx.save();
   ctx.globalAlpha = Math.max(0.15, Math.min(1, 1.25 - p.rz / 2400));
+  // мягкая тень у стоячих объектов
+  if (["fir", "pine", "rock", "yurt", "dome", "pillar", "deadtree", "fang"].includes(d.type)) {
+    ctx.fillStyle = "rgba(30,24,12,.18)";
+    ctx.beginPath(); ctx.ellipse(x + s * 0.06, y + s * 0.02, s * 0.3, s * 0.08, 0, 0, 7); ctx.fill();
+  }
   switch (d.type) {
+    case "water": { // бирюзовая вода
+      const rw = s * 4.2, rh = s * 1.35;
+      const wgr = ctx.createRadialGradient(x, y, rw * 0.1, x, y, rw);
+      wgr.addColorStop(0, "#6ec6cf"); wgr.addColorStop(0.7, "#3f9fb2"); wgr.addColorStop(1, "#2f7f96");
+      ctx.fillStyle = wgr;
+      ctx.beginPath(); ctx.ellipse(x, y, rw, rh, 0, 0, 7); ctx.fill();
+      // блики
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(x - rw * 0.2, y - rh * 0.15, rw * 0.4, rh * 0.3, 0.2, 0.3, 2.6); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x + rw * 0.3, y + rh * 0.2, rw * 0.25, rh * 0.2, -0.2, 3.4, 5.6); ctx.stroke();
+      break;
+    }
+    case "salt":
+      ctx.fillStyle = "rgba(244,242,232,.5)";
+      ctx.beginPath(); ctx.ellipse(x, y, s * 2.4, s * 0.6, 0, 0, 7); ctx.fill();
+      break;
+    case "deadtree": { // белёный ствол ели из воды (Каинды)
+      const h = s * 1.3;
+      ctx.strokeStyle = "#d8d2c4"; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s * 0.05, y - h); ctx.stroke();
+      ctx.lineWidth = Math.max(1, s * 0.035);
+      for (let i = 1; i < 5; i++) {
+        const t = i / 5, yy = y - h * t;
+        ctx.beginPath();
+        ctx.moveTo(x + s * 0.04 * i, yy); ctx.lineTo(x - s * (0.3 - t * 0.2), yy - s * 0.1);
+        ctx.moveTo(x + s * 0.04 * i, yy); ctx.lineTo(x + s * (0.34 - t * 0.2), yy - s * 0.12);
+        ctx.stroke();
+      }
+      break;
+    }
+    case "fang": { // белые клыки Бозжыры
+      const h = s * (1.6 + d.seed * 0.4);
+      const fg2 = ctx.createLinearGradient(x - s * 0.5, 0, x + s * 0.5, 0);
+      fg2.addColorStop(0, "#f2ece0"); fg2.addColorStop(0.55, "#ddd2ba"); fg2.addColorStop(1, "#b8ab8e");
+      ctx.fillStyle = fg2;
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.55, y);
+      ctx.quadraticCurveTo(x - s * 0.28, y - h * 0.45, x - s * 0.06, y - h);
+      ctx.quadraticCurveTo(x + s * 0.02, y - h * 1.02, x + s * 0.08, y - h * 0.92);
+      ctx.quadraticCurveTo(x + s * 0.3, y - h * 0.4, x + s * 0.55, y);
+      ctx.closePath(); ctx.fill();
+      // слоистость
+      ctx.strokeStyle = "rgba(150,135,105,.4)"; ctx.lineWidth = 1;
+      for (let i = 1; i < 5; i++) {
+        const t = i / 5;
+        ctx.beginPath();
+        ctx.moveTo(x - s * 0.5 * (1 - t * 0.75), y - h * t * 0.8);
+        ctx.quadraticCurveTo(x, y - h * t * 0.86, x + s * 0.5 * (1 - t * 0.75), y - h * t * 0.8);
+        ctx.stroke();
+      }
+      break;
+    }
+    case "dune": { // поющий бархан
+      const h = s * 0.9, w2 = s * 3;
+      const dg = ctx.createLinearGradient(x - w2, 0, x + w2, 0);
+      dg.addColorStop(0, "#e8c88a"); dg.addColorStop(0.5, "#d4a960"); dg.addColorStop(1, "#a87c42");
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.moveTo(x - w2, y);
+      ctx.quadraticCurveTo(x - w2 * 0.3, y - h * 1.05, x + w2 * 0.1, y - h);
+      ctx.quadraticCurveTo(x + w2 * 0.5, y - h * 0.6, x + w2, y);
+      ctx.closePath(); ctx.fill();
+      // гребень
+      ctx.strokeStyle = "rgba(120,84,40,.5)"; ctx.lineWidth = Math.max(1, s * 0.03);
+      ctx.beginPath();
+      ctx.moveTo(x - w2 * 0.9, y - h * 0.08);
+      ctx.quadraticCurveTo(x - w2 * 0.25, y - h * 1.0, x + w2 * 0.1, y - h);
+      ctx.stroke();
+      break;
+    }
+    case "aktau": case "mesaRock": { // полосатые горы Актау / меловые останцы
+      const h = s * 1.1, w2 = s * 2.2;
+      const bands = d.type === "aktau"
+        ? ["#f0e6d4", "#e0b88a", "#cf9268", "#b87a52"]
+        : ["#f0e9da", "#ddd0b4", "#c4b492", "#a89878"];
+      for (let i = 0; i < 4; i++) {
+        const t0 = i / 4, t1 = (i + 1) / 4;
+        ctx.fillStyle = bands[i];
+        ctx.beginPath();
+        ctx.moveTo(x - w2 * (1 - t0 * 0.72), y - h * t0);
+        ctx.quadraticCurveTo(x, y - h * (t0 + 0.09), x + w2 * (1 - t0 * 0.72), y - h * t0);
+        ctx.lineTo(x + w2 * (1 - t1 * 0.72), y - h * t1);
+        ctx.quadraticCurveTo(x, y - h * (t1 + 0.09), x - w2 * (1 - t1 * 0.72), y - h * t1);
+        ctx.closePath(); ctx.fill();
+      }
+      break;
+    }
     case "grass":
       ctx.strokeStyle = "#7d8f4a"; ctx.lineWidth = Math.max(1, s * 0.05);
       ctx.beginPath();
@@ -1294,6 +1509,54 @@ function drawLaunch() {
   }
 }
 
+function drawTarget() {
+  if (!G.target || G.state !== "fly" || G.target.state === "gone") return;
+  const a = G.target;
+  const p = project(a.x, a.z);
+  const d = dist(E.x, E.z, a.x, a.z);
+  ctx.save();
+  if (p && p.x > -20 && p.x < W + 20) {
+    const size = Math.max(10, ANIMALS[a.sp].size * p.s * 1.2);
+    const yy = p.y - size * 2 - 20;
+    const pulse = 1 + Math.sin(G.t * 6) * 0.14;
+    // ромб над целью
+    ctx.save();
+    ctx.translate(p.x, yy);
+    ctx.scale(pulse, pulse);
+    ctx.fillStyle = "rgba(232,192,90,.95)";
+    ctx.beginPath();
+    ctx.moveTo(0, -9); ctx.lineTo(7, 0); ctx.lineTo(0, 9); ctx.lineTo(-7, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // кольцо у ног
+    ctx.strokeStyle = "rgba(232,192,90,.85)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, size * 2.4 + 8, size * 0.8 + 3, 0, 0, 7); ctx.stroke();
+    // подпись
+    ctx.fillStyle = "rgba(240,234,216,.95)";
+    ctx.font = "600 13px 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "rgba(0,0,0,.6)"; ctx.shadowBlur = 5;
+    ctx.fillText(`${ANIMALS[a.sp].name} · ${Math.round(d)} м`, p.x, yy - 16);
+    if (d < 400 && !E.diving && E.alt > 55 && Math.sin(G.t * 8) > -0.3) {
+      ctx.fillStyle = "#ffd866";
+      ctx.font = "700 15px 'Segoe UI', sans-serif";
+      ctx.fillText("↓ ПИКЕ!", p.x, yy + 34);
+    }
+  } else {
+    // цель сбоку/сзади: стрелка на краю экрана
+    const dx = wrap(a.x - E.x), dz = wrap(a.z - E.z);
+    const da = wrapAngle(Math.atan2(dx, dz) - E.heading);
+    const ex = W / 2 + Math.max(-W * 0.44, Math.min(W * 0.44, Math.sin(da) * W * 0.6));
+    ctx.translate(ex, H * 0.24);
+    ctx.rotate(da);
+    ctx.fillStyle = "rgba(232,192,90,.9)";
+    ctx.beginPath();
+    ctx.moveTo(0, -14); ctx.lineTo(9, 6); ctx.lineTo(0, 1); ctx.lineTo(-9, 6);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawVisionFx() {
   if (!E.vision) return;
   const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.75);
@@ -1343,7 +1606,7 @@ function frame(dtMs) {
   }
   const hp = project(0, 0);
   if (hp && hp.s > 0.02) items.push({ kind: "hunter", p: hp });
-  const flat = (it) => it.o && (it.o.type === "lake" || it.o.type === "patch");
+  const flat = (it) => it.o && ["lake", "patch", "water", "salt"].includes(it.o.type);
   items.sort((i1, i2) => (flat(i1) ? 1e9 : i1.p.rz) - (flat(i2) ? 1e9 : i2.p.rz));
   items.reverse();
   for (const it of items) {
@@ -1353,8 +1616,14 @@ function frame(dtMs) {
   }
 
   if (G.state === "launch") drawLaunch();
-  else if (G.state === "fly" || G.state === "menu") drawEagle();
+  else if (G.state === "fly" || G.state === "menu") { drawTarget(); drawEagle(); }
   drawVisionFx();
+  // виньетка
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.5, W / 2, H / 2, H * 1.05);
+  vg.addColorStop(0, "rgba(20,16,8,0)");
+  vg.addColorStop(1, "rgba(20,16,8,.22)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
   if (G.flyFade > 0) {
     ctx.fillStyle = `rgba(240,238,228,${Math.min(0.9, G.flyFade)})`;
     ctx.fillRect(0, 0, W, H);
@@ -1402,6 +1671,7 @@ if (location.hash.includes("demo")) {
   menu.style.display = "none";
   if (!location.hash.includes("launch")) { beginFly(); G.flyFade = 0; try { localStorage.setItem("eagle_tut", "1"); } catch {} }
   if (location.hash.includes("vision")) { E.vision = true; E.focus = 1; }
+  if (location.hash.includes("target")) G.target = animals[0];
   const ff = /ff(\d+)/.exec(location.hash);
   if (ff) for (let i = 0; i < +ff[1]; i++) frame(16.7);
 }
