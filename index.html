@@ -130,6 +130,7 @@
   </div>
 </div>
 
+<script src="./diag.js"></script>
 <script type="module">
 import * as THREE from "./three.module.js";
 /* ============================================================
@@ -1867,6 +1868,8 @@ if (location.hash.includes("demo")) {
   if (ff) for (let i = 0; i < +ff[1]; i++) frame(1 / 60);
   if (location.hash.includes("freeze")) FROZEN = true;
 }
+
+window.__bkOK = true;
 </script>
 </body>
 </html>
