@@ -75,6 +75,59 @@
   #btnMenu { right: 18px; top: 14px; width: 42px; height: 42px; font-size: 18px; }
   #btnVision:active { background: rgba(232,192,90,.35); }
 
+  /* экранные кнопки управления (тачскрин) */
+  #dpad { position: absolute; left: 16px; bottom: 16px; width: 168px; height: 168px; display: none; }
+  @media (pointer: coarse) { #dpad { display: block; } #hintLine { display: none; } }
+  .dbtn {
+    position: absolute; width: 52px; height: 52px; border-radius: 14px;
+    background: rgba(15,22,34,.5); border: 1px solid rgba(255,255,255,.28);
+    color: #f0ead8; font-size: 22px; display: flex; align-items: center; justify-content: center;
+    pointer-events: auto; backdrop-filter: blur(3px);
+  }
+  .dbtn:active { background: rgba(232,192,90,.4); }
+  #dUp { left: 58px; top: 0; }
+  #dDown { left: 58px; bottom: 0; }
+  #dLeft { left: 0; top: 58px; }
+  #dRight { right: 0; top: 58px; }
+
+  /* высотомер */
+  #altWrap {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    width: 6px; height: 150px; background: rgba(255,255,255,.16); border-radius: 3px;
+  }
+  #altDot {
+    position: absolute; left: 50%; bottom: 0; width: 14px; height: 14px;
+    border-radius: 50%; background: #e8c05a; transform: translate(-50%, 50%);
+    box-shadow: 0 0 8px rgba(232,192,90,.6);
+  }
+  #altWrap::after {
+    content: ""; position: absolute; left: -4px; bottom: -2px; width: 14px; height: 2px;
+    background: rgba(255,255,255,.5);
+  }
+
+  /* обучение */
+  #tut {
+    position: absolute; bottom: 21%; left: 50%; transform: translateX(-50%);
+    font-size: 16px; line-height: 1.6; text-align: center;
+    background: rgba(10,16,28,.6); padding: 12px 26px; border-radius: 14px;
+    border: 1px solid rgba(232,192,90,.45);
+    opacity: 0; transition: opacity .3s; white-space: nowrap;
+  }
+  #tut.show { opacity: 1; }
+  #tut.done { border-color: #7ac86a; }
+
+  kbd {
+    display: inline-block; min-width: 20px;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35);
+    border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px;
+    font-family: inherit; font-size: 12px; text-align: center;
+  }
+  #skipHint {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    font-size: 13px; opacity: 0; transition: opacity .4s; letter-spacing: 1px;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+
   /* ---------- меню ---------- */
   #menu {
     position: absolute; inset: 0;
@@ -122,7 +175,16 @@
     <div id="carryInfo"></div>
     <div id="homeArrow">⬆</div>
     <div id="msgs"></div>
-    <div id="hintLine">←→ вираж · ↑ выше · ↓ пике · V — зоркий глаз · охоться и неси добычу беркутчи</div>
+    <div id="hintLine"><kbd>←</kbd><kbd>→</kbd> вираж · <kbd>↑</kbd> выше · <kbd>↓</kbd> пике · <kbd>V</kbd> зоркий глаз</div>
+    <div id="tut"></div>
+    <div id="skipHint">тап / любая клавиша — пропустить</div>
+    <div id="altWrap"><div id="altDot"></div></div>
+    <div id="dpad">
+      <div class="dbtn" id="dUp">▲</div>
+      <div class="dbtn" id="dLeft">◀</div>
+      <div class="dbtn" id="dRight">▶</div>
+      <div class="dbtn" id="dDown">▼</div>
+    </div>
     <button class="hudBtn" id="btnVision" title="Зоркий глаз (V)">👁</button>
     <button class="hudBtn" id="btnMenu" title="Меню (Esc)">☰</button>
   </div>
@@ -134,8 +196,8 @@
     <div id="menuCoins">🪙 0</div>
     <div id="locGrid"></div>
     <button id="btnFly">ЛЕТЕТЬ</button>
-    <div id="ctrlHelp">←→ — вираж, ↑ — набор высоты, ↓ — пике, V (удерж.) — зоркий глаз, Esc — меню<br>
-      на тачскрине: веди пальцем — руль, кнопка 👁 — зрение</div>
+    <div id="ctrlHelp"><kbd>←</kbd><kbd>→</kbd> вираж &nbsp; <kbd>↑</kbd> набор высоты &nbsp; <kbd>↓</kbd> пике &nbsp; <kbd>V</kbd> удерживать — зоркий глаз &nbsp; <kbd>Esc</kbd> меню<br>
+      на тачскрине: экранные стрелки или веди пальцем, кнопка 👁 — зрение</div>
   </div>
 </div>
 
@@ -318,6 +380,15 @@ function buildWorld() {
   }
   // не ставить декор на базу охотника
   decors = decors.filter(d => d.type === "lake" || dist(d.x, d.z, 0, 0) > 160);
+  // облака и пятна травостоя — во всех локациях
+  for (let i = 0; i < 9; i++) decors.push({
+    type: "cloud", x: Math.random() * LOOP, z: Math.random() * LOOP,
+    s: 1 + Math.random() * 1.4, seed: Math.random(), hgt: 400 + Math.random() * 180,
+  });
+  for (let i = 0; i < 36; i++) decors.push({
+    type: "patch", x: Math.random() * LOOP, z: Math.random() * LOOP,
+    s: 1 + Math.random() * 1.5, seed: Math.random(),
+  });
   animals = [];
   for (let i = 0; i < 14; i++) animals.push(makeAnimal());
 }
@@ -350,6 +421,7 @@ function makeAnimal(nearEagle) {
 /* ---------- ввод ---------- */
 const keys = {};
 addEventListener("keydown", (e) => {
+  if (G.state === "launch") { e.preventDefault(); beginFly(); return; }
   if (e.code === "Escape") { toggleMenu(); return; }
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(e.code)) e.preventDefault();
   keys[e.code] = true;
@@ -363,6 +435,7 @@ addEventListener("keyup", (e) => {
 let steer = 0, pitchTouch = 0, ptrId = null, ptrX = 0, ptrY = 0;
 cv.addEventListener("pointerdown", (e) => {
   snd.ensure();
+  if (G.state === "launch") { beginFly(); return; }
   ptrId = e.pointerId; ptrX = e.clientX; ptrY = e.clientY;
 });
 addEventListener("pointermove", (e) => {
@@ -378,6 +451,14 @@ btnVision.addEventListener("pointerdown", (e) => { e.stopPropagation(); snd.ensu
 addEventListener("pointerup", () => { if (!keys.KeyV) E.vision = false; });
 document.getElementById("btnMenu").addEventListener("click", toggleMenu);
 
+/* экранные стрелки */
+const vKeys = {};
+for (const [id, key] of [["dUp", "up"], ["dDown", "down"], ["dLeft", "left"], ["dRight", "right"]]) {
+  const el = document.getElementById(id);
+  el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); snd.ensure(); vKeys[key] = true; });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) el.addEventListener(ev, () => { vKeys[key] = false; });
+}
+
 /* ---------- HUD ---------- */
 const elCoins = document.getElementById("coins");
 const elMenuCoins = document.getElementById("menuCoins");
@@ -386,6 +467,51 @@ const elFocus = document.getElementById("focusBar");
 const elCarry = document.getElementById("carryInfo");
 const elArrow = document.getElementById("homeArrow");
 const elMsgs = document.getElementById("msgs");
+const elTut = document.getElementById("tut");
+const elSkip = document.getElementById("skipHint");
+const elAltDot = document.getElementById("altDot");
+
+/* ---------- обучение ---------- */
+const TUT_STEPS = [
+  { html: 'Веди беркута: <kbd>←</kbd><kbd>→</kbd>, стрелки на экране или палец', check: (dt) => Math.abs(E.bank) > 0.35 ? dt : 0, need: 0.7 },
+  { html: 'Пикируй: <kbd>↓</kbd> — хватай зверька у самой земли', check: (dt) => E.diving ? dt : 0, need: 0.6 },
+  { html: 'Зоркий глаз: удерживай <kbd>V</kbd> или 👁 — добыча подсветится', check: (dt) => E.vision ? dt : 0, need: 0.5 },
+  { html: 'Поймал — неси охотнику по стрелке ⬆, он заплатит монетами', check: (dt) => dt, need: 6 },
+];
+const tut = { on: false, i: 0, acc: 0, flash: 0 };
+function tutStart() {
+  tut.on = true; tut.i = 0; tut.acc = 0; tut.flash = 0;
+  tutShow();
+}
+function tutShow() {
+  elTut.classList.add("show");
+  elTut.classList.remove("done");
+  elTut.innerHTML = TUT_STEPS[tut.i].html;
+}
+function tutUpdate(dt) {
+  if (!tut.on) return;
+  if (tut.flash > 0) {
+    tut.flash -= dt;
+    if (tut.flash <= 0) {
+      tut.i++;
+      tut.acc = 0;
+      if (tut.i >= TUT_STEPS.length) {
+        tut.on = false;
+        elTut.classList.remove("show");
+        try { localStorage.setItem("eagle_tut", "1"); } catch {}
+        msg("Жақсы! Ты — настоящий беркутчи 🦅");
+      } else tutShow();
+    }
+    return;
+  }
+  tut.acc += TUT_STEPS[tut.i].check(dt);
+  if (tut.acc >= TUT_STEPS[tut.i].need) {
+    tut.flash = 0.8;
+    elTut.classList.add("done");
+    elTut.innerHTML = "✓";
+    snd.beep(720, 0.1);
+  }
+}
 
 function msg(text) {
   const d = document.createElement("div");
@@ -434,11 +560,23 @@ function startFlight() {
   buildWorld();
   E.x = 0; E.z = 140; E.heading = 0; E.alt = 150; E.bank = 0;
   E.carrying = null; E.focus = 1; E.vision = false;
-  G.state = "fly";
+  G.state = "launch";
+  G.launchT = 0;
   menu.classList.add("hidden");
   elLoc.textContent = LOCS[G.locKey].name;
+  elSkip.style.opacity = 0.7;
+}
+
+function beginFly() {
+  if (G.state !== "launch") return;
+  G.state = "fly";
+  G.flyFade = 1;
+  elSkip.style.opacity = 0;
   snd.cry();
-  msg("Беркут в небе! Ищи зверька и пикируй ↓");
+  let tutDone = false;
+  try { tutDone = !!localStorage.getItem("eagle_tut"); } catch {}
+  if (!tutDone) tutStart();
+  else msg("Беркут в небе! Ищи зверька и пикируй ↓");
 }
 
 function toggleMenu() {
@@ -455,11 +593,11 @@ function toggleMenu() {
 
 /* ---------- логика полёта ---------- */
 function updateEagle(dt) {
-  const turnIn = (keys.ArrowLeft || keys.KeyA ? -1 : 0) + (keys.ArrowRight || keys.KeyD ? 1 : 0) + steer;
+  const turnIn = (keys.ArrowLeft || keys.KeyA || vKeys.left ? -1 : 0) + (keys.ArrowRight || keys.KeyD || vKeys.right ? 1 : 0) + steer;
   E.bank += (Math.max(-1, Math.min(1, turnIn)) - E.bank) * Math.min(1, dt * 6);
   E.heading += E.bank * 1.5 * dt;
 
-  const pitchIn = (keys.ArrowUp || keys.KeyW ? -1 : 0) + (keys.ArrowDown || keys.KeyS ? 1 : 0) + pitchTouch;
+  const pitchIn = (keys.ArrowUp || keys.KeyW || vKeys.up ? -1 : 0) + (keys.ArrowDown || keys.KeyS || vKeys.down ? 1 : 0) + pitchTouch;
   E.diving = pitchIn > 0.3;
   if (E.diving) {
     E.alt -= 260 * dt;
@@ -678,6 +816,20 @@ function drawDecor(d, p) {
       ctx.fillStyle = "#b8c0c8";
       ctx.fillRect(x - s * 0.04, y - s * 0.56, s * 0.08, s * 0.2);
       break;
+    case "cloud": {
+      const rw = s * 3.2, rh = s * 0.8;
+      const cg = ctx.createRadialGradient(x, y, rw * 0.15, x, y, rw);
+      cg.addColorStop(0, "rgba(255,255,255,.9)");
+      cg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = cg;
+      ctx.beginPath(); ctx.ellipse(x, y, rw, rh, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x - rw * 0.35, y + rh * 0.3, rw * 0.55, rh * 0.6, 0, 0, 7); ctx.fill();
+      break;
+    }
+    case "patch":
+      ctx.fillStyle = d.seed < 0.5 ? "rgba(50,45,25,.055)" : "rgba(255,255,235,.045)";
+      ctx.beginPath(); ctx.ellipse(x, y, s * 3.6, s * 1.05, 0, 0, 7); ctx.fill();
+      break;
     case "lake": {
       const rw = s * 4.5, rh = s * 1.4;
       const lg = ctx.createRadialGradient(x, y, rw * 0.1, x, y, rw);
@@ -745,83 +897,145 @@ function drawAnimal(a, p) {
 }
 
 function drawHunter(p) {
-  const s = p.s * 60;
-  const x = p.x, y = p.y;
   ctx.save();
   ctx.globalAlpha = Math.max(0.25, Math.min(1, 1.3 - p.rz / 2400));
-  ctx.fillStyle = "rgba(30,25,15,.25)";
-  ctx.beginPath(); ctx.ellipse(x, y, s * 0.5, s * 0.14, 0, 0, 7); ctx.fill();
-  // конь
-  ctx.fillStyle = "#6e4a2a";
-  ctx.beginPath(); ctx.ellipse(x, y - s * 0.34, s * 0.42, s * 0.2, 0, 0, 7); ctx.fill();
-  ctx.fillRect(x - s * 0.34, y - s * 0.34, s * 0.07, s * 0.34);
-  ctx.fillRect(x + s * 0.24, y - s * 0.34, s * 0.07, s * 0.34);
-  ctx.beginPath(); ctx.ellipse(x + s * 0.48, y - s * 0.52, s * 0.13, s * 0.17, 0.5, 0, 7); ctx.fill();
-  // всадник в чапане
-  ctx.fillStyle = "#3566a8";
-  ctx.beginPath(); ctx.ellipse(x - s * 0.05, y - s * 0.66, s * 0.16, s * 0.24, 0, 0, 7); ctx.fill();
-  // поднятая рука с перчаткой
-  ctx.strokeStyle = "#3566a8"; ctx.lineWidth = s * 0.09; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(x - s * 0.02, y - s * 0.74); ctx.lineTo(x + s * 0.28, y - s * 1.02); ctx.stroke();
-  ctx.fillStyle = "#8a5a33";
-  ctx.beginPath(); ctx.arc(x + s * 0.3, y - s * 1.04, s * 0.08, 0, 7); ctx.fill();
-  // лицо и калпак
-  ctx.fillStyle = "#e0b284";
-  ctx.beginPath(); ctx.arc(x - s * 0.05, y - s * 0.98, s * 0.1, 0, 7); ctx.fill();
-  ctx.fillStyle = "#f2ede0";
-  ctx.beginPath();
-  ctx.moveTo(x - s * 0.17, y - s * 1.02); ctx.lineTo(x + s * 0.07, y - s * 1.02); ctx.lineTo(x - s * 0.05, y - s * 1.24);
-  ctx.closePath(); ctx.fill();
+  drawBatyr(p.x, p.y, p.s * 0.32, 0.85, G.t);
+  ctx.restore();
+}
+
+/* детальная модель беркута со спины: слои перьев, маховые, белый хвост
+   молодой птицы с тёмной полосой, золотой затылок */
+function drawEagleModel(cx, cy, sc, flapPhase, bank, diving, carrying) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(bank * 0.5);
+  ctx.scale(sc, sc);
+  const flap = Math.sin(flapPhase) * (diving ? 4 : 13);
+  const span = diving ? 68 : 116;
+
+  // хвост-веер: 7 перьев, белое основание + тёмная кайма
+  for (let i = -3; i <= 3; i++) {
+    const a = i * 0.16;
+    ctx.save();
+    ctx.rotate(a);
+    ctx.fillStyle = "#e6ddc8";
+    ctx.beginPath();
+    ctx.moveTo(-4, 8);
+    ctx.quadraticCurveTo(-5, 26, 0, 38);
+    ctx.quadraticCurveTo(5, 26, 4, 8);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#241a0c";
+    ctx.beginPath();
+    ctx.moveTo(-3.4, 30); ctx.quadraticCurveTo(0, 40, 3.4, 30);
+    ctx.quadraticCurveTo(2, 27, 0, 27.5); ctx.quadraticCurveTo(-2, 27, -3.4, 30);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.scale(side, 1);
+    // внешнее крыло при крене поднимается, внутреннее опускается
+    const raise = flap + (bank * side > 0 ? -bank * side * 10 : -bank * side * 6);
+    const wristX = span * 0.5, wristY = -20 - raise * 0.9;
+    const tipX = span, tipY = -8 - raise * 1.7;
+    // основа крыла
+    const wg = ctx.createLinearGradient(0, -34, 0, 16);
+    wg.addColorStop(0, "#6b4a28"); wg.addColorStop(0.55, "#4a3116"); wg.addColorStop(1, "#241708");
+    ctx.fillStyle = wg;
+    ctx.beginPath();
+    ctx.moveTo(6, -6);
+    ctx.quadraticCurveTo(span * 0.26, -30 - raise * 0.6, wristX, wristY);
+    ctx.quadraticCurveTo(span * 0.78, wristY - 4, tipX, tipY);
+    // задняя кромка: фестоны вторичных перьев
+    ctx.quadraticCurveTo(span * 0.8, tipY + 16, wristX + 8, wristY + 26);
+    for (let i = 0; i < 4; i++) {
+      const t = i / 4;
+      const ex = (wristX + 8) * (1 - t) + 14 * t;
+      const ey = (wristY + 26) * (1 - t) + 14 * t;
+      ctx.quadraticCurveTo(ex + 7, ey + 7, ex - 8, ey + 3);
+    }
+    ctx.quadraticCurveTo(8, 14, 6, -6);
+    ctx.closePath(); ctx.fill();
+    // маховые перья на конце крыла — раздельные "пальцы"
+    ctx.fillStyle = "#1c1207";
+    for (let i = 0; i < 6; i++) {
+      const t = i / 5;
+      const bx = wristX + (tipX - wristX) * (0.28 + t * 0.72) - 4;
+      const by = wristY + (tipY - wristY) * (0.28 + t * 0.72) + 2;
+      const ang = -0.15 + t * 0.75 + raise * 0.012;
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.moveTo(0, -2.4);
+      ctx.quadraticCurveTo(22 - t * 4, -4, 30 - t * 5, 2 + t * 5);
+      ctx.quadraticCurveTo(20, 4, 0, 3);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    // кроющие перья: светлая полоса вдоль передней кромки
+    ctx.fillStyle = "rgba(150,108,56,.75)";
+    ctx.beginPath();
+    ctx.moveTo(8, -8);
+    ctx.quadraticCurveTo(span * 0.26, -28 - raise * 0.6, wristX, wristY + 2);
+    ctx.quadraticCurveTo(span * 0.3, wristY + 8 - raise * 0.3, 10, 2);
+    ctx.closePath(); ctx.fill();
+    // пестрины на кроющих
+    ctx.fillStyle = "rgba(35,22,10,.4)";
+    for (let i = 0; i < 5; i++) {
+      const t = 0.2 + i * 0.15;
+      ctx.beginPath();
+      ctx.ellipse(span * t * 0.55 + 6, -12 - raise * t * 0.7 + t * 8, 3, 1.4, 0.4, 0, 7);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // тело
+  const bg = ctx.createLinearGradient(0, -20, 0, 16);
+  bg.addColorStop(0, "#6e4e2c"); bg.addColorStop(1, "#33230f");
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.ellipse(0, 0, 11.5, 21, 0, 0, 7); ctx.fill();
+  // перьевая рябь на спине
+  ctx.strokeStyle = "rgba(24,15,6,.5)"; ctx.lineWidth = 1.2;
+  for (let r = 0; r < 3; r++) {
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 6 - 2.5, -6 + r * 7);
+      ctx.lineTo(i * 6, -3.5 + r * 7);
+      ctx.lineTo(i * 6 + 2.5, -6 + r * 7);
+      ctx.stroke();
+    }
+  }
+  // золотой затылок с бликом
+  const ng = ctx.createRadialGradient(0, -17, 1, 0, -17, 10);
+  ng.addColorStop(0, "#e8bc55"); ng.addColorStop(1, "#a8781f");
+  ctx.fillStyle = ng;
+  ctx.beginPath(); ctx.ellipse(0, -16, 7.5, 9, 0, 0, 7); ctx.fill();
+  // голова
+  ctx.fillStyle = "#2e2010";
+  ctx.beginPath(); ctx.ellipse(0, -23, 4, 3.6, 0, 0, 7); ctx.fill();
+
+  // добыча в когтях
+  if (carrying) {
+    const sp = ANIMALS[carrying];
+    ctx.strokeStyle = "#d8b13a"; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-4, 16); ctx.lineTo(-5, 24);
+    ctx.moveTo(4, 16); ctx.lineTo(5, 24);
+    ctx.stroke();
+    ctx.fillStyle = sp.body;
+    ctx.beginPath(); ctx.ellipse(0, 28, 10, 6.5, 0.15, 0, 7); ctx.fill();
+    ctx.fillStyle = sp.detail;
+    ctx.beginPath(); ctx.ellipse(3.5, 27, 3.6, 2.4, 0.15, 0, 7); ctx.fill();
+  }
   ctx.restore();
 }
 
 function drawEagle() {
-  const cx = W / 2, cy = H * 0.68;
-  const flapY = Math.sin(E.flap) * (E.diving ? 4 : 14);
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(E.bank * 0.45);
-  const span = E.diving ? 62 : 108;
-  // крылья
-  const wg = ctx.createLinearGradient(0, -30, 0, 16);
-  wg.addColorStop(0, "#5c4026"); wg.addColorStop(1, "#33230f");
-  ctx.fillStyle = wg;
-  for (const side of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(side * 7, -4);
-    ctx.quadraticCurveTo(side * span * 0.55, -26 - flapY, side * span, -14 - flapY * 1.6);
-    for (let i = 0; i < 5; i++) {
-      const t = 1 - i / 5;
-      ctx.lineTo(side * span * (0.55 + t * 0.45) - side * 6, -2 - flapY * t * 1.2 + (1 - t) * 10);
-    }
-    ctx.quadraticCurveTo(side * 26, 12, side * 6, 9);
-    ctx.closePath(); ctx.fill();
-  }
-  // хвост-веер
-  ctx.fillStyle = "#4a3018";
-  ctx.beginPath();
-  ctx.moveTo(-7, 8);
-  ctx.lineTo(-14, 34); ctx.lineTo(-5, 30); ctx.lineTo(0, 37); ctx.lineTo(5, 30); ctx.lineTo(14, 34); ctx.lineTo(7, 8);
-  ctx.closePath(); ctx.fill();
-  // тело
-  const bg = ctx.createLinearGradient(0, -18, 0, 14);
-  bg.addColorStop(0, "#6e4e2c"); bg.addColorStop(1, "#3c2a14");
-  ctx.fillStyle = bg;
-  ctx.beginPath(); ctx.ellipse(0, 0, 11, 20, 0, 0, 7); ctx.fill();
-  // золотой затылок и голова
-  ctx.fillStyle = "#c9982f";
-  ctx.beginPath(); ctx.ellipse(0, -17, 7, 8, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = "#2e2010";
-  ctx.beginPath(); ctx.ellipse(0, -22, 3.4, 3, 0, 0, 7); ctx.fill();
-  // добыча в когтях
-  if (E.carrying) {
-    const sp = ANIMALS[E.carrying];
-    ctx.fillStyle = sp.body;
-    ctx.beginPath(); ctx.ellipse(0, 26, 9, 6, 0.2, 0, 7); ctx.fill();
-    ctx.fillStyle = sp.detail;
-    ctx.beginPath(); ctx.ellipse(3, 25, 3.5, 2.2, 0.2, 0, 7); ctx.fill();
-  }
-  ctx.restore();
+  const bob = Math.sin(G.t * 2.6) * 3;
+  drawEagleModel(W / 2, H * 0.68 + bob, 1, E.flap, E.bank, E.diving, E.carrying);
   // тень на земле
   const sh = project(E.x, E.z, 0);
   if (sh) {
@@ -829,6 +1043,254 @@ function drawEagle() {
     ctx.beginPath();
     ctx.ellipse(W / 2, sh.y, Math.max(6, 34 * sh.s * 3), Math.max(2, 10 * sh.s * 3), 0, 0, 7);
     ctx.fill();
+  }
+}
+
+/* беркут сбоку, сидит на перчатке (для катсцены запуска) */
+function drawEaglePerched(x, y, sc, spread, t) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sc, sc);
+  const breathe = Math.sin(t * 3) * 0.8;
+  // раскрывающиеся крылья
+  if (spread > 0.01) {
+    const s = Math.min(1, spread);
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.rotate(-0.5 - s * 0.7 * side + (side < 0 ? 0.35 : 0));
+      const wg = ctx.createLinearGradient(0, -40 * s, 0, 0);
+      wg.addColorStop(0, "#241708"); wg.addColorStop(1, "#5c4026");
+      ctx.fillStyle = wg;
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.quadraticCurveTo(side * 18 * s, -34 - 26 * s, side * 34 * s, -30 - 44 * s);
+      ctx.quadraticCurveTo(side * 30 * s, -20 - 20 * s, side * 10 * s, -8);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  // хвост вниз-назад
+  ctx.fillStyle = "#e6ddc8";
+  ctx.beginPath();
+  ctx.moveTo(-8, 2); ctx.quadraticCurveTo(-24, 16, -30, 30);
+  ctx.lineTo(-20, 32); ctx.quadraticCurveTo(-10, 16, -2, 8);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#241a0c";
+  ctx.beginPath();
+  ctx.moveTo(-30, 30); ctx.lineTo(-20, 32); ctx.lineTo(-23, 36); ctx.lineTo(-32, 33);
+  ctx.closePath(); ctx.fill();
+  // сложенное крыло поверх тела
+  const fw = ctx.createLinearGradient(0, -20, 0, 10);
+  fw.addColorStop(0, "#5c4026"); fw.addColorStop(1, "#2a1c0e");
+  ctx.fillStyle = fw;
+  ctx.beginPath();
+  ctx.ellipse(-2, -6 + breathe * 0.3, 15, 20, -0.35, 0, 7);
+  ctx.fill();
+  // тело/грудь
+  const bg2 = ctx.createLinearGradient(0, -22, 0, 12);
+  bg2.addColorStop(0, "#6e4e2c"); bg2.addColorStop(1, "#3a2812");
+  ctx.fillStyle = bg2;
+  ctx.beginPath();
+  ctx.ellipse(4, -6 + breathe * 0.3, 11, 19, -0.12, 0, 7);
+  ctx.fill();
+  // лапы с когтями на перчатке
+  ctx.strokeStyle = "#d8b13a"; ctx.lineWidth = 2.6; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(1, 10); ctx.lineTo(2, 17); ctx.moveTo(8, 10); ctx.lineTo(8, 17);
+  ctx.stroke();
+  ctx.lineWidth = 1.6;
+  for (const lx of [2, 8]) {
+    ctx.beginPath();
+    ctx.moveTo(lx, 17); ctx.lineTo(lx - 4, 20);
+    ctx.moveTo(lx, 17); ctx.lineTo(lx + 1, 21);
+    ctx.moveTo(lx, 17); ctx.lineTo(lx + 5, 19);
+    ctx.stroke();
+  }
+  // голова: золотой затылок, клюв
+  ctx.fillStyle = "#c9982f";
+  ctx.beginPath(); ctx.ellipse(9, -24 + breathe * 0.5, 7.5, 8.5, 0.15, 0, 7); ctx.fill();
+  ctx.fillStyle = "#3a2812";
+  ctx.beginPath(); ctx.ellipse(11, -26 + breathe * 0.5, 6, 5.5, 0.15, 0, 7); ctx.fill();
+  // клюв с крючком
+  ctx.fillStyle = "#d8c05a";
+  ctx.beginPath();
+  ctx.moveTo(16, -28 + breathe * 0.5);
+  ctx.quadraticCurveTo(23, -27 + breathe * 0.5, 23.5, -23 + breathe * 0.5);
+  ctx.quadraticCurveTo(21, -23.5 + breathe * 0.5, 19.5, -25 + breathe * 0.5);
+  ctx.quadraticCurveTo(17, -24 + breathe * 0.5, 15.5, -24.5 + breathe * 0.5);
+  ctx.closePath(); ctx.fill();
+  // глаз
+  ctx.fillStyle = "#e8bc55";
+  ctx.beginPath(); ctx.arc(13.5, -27.5 + breathe * 0.5, 1.8, 0, 7); ctx.fill();
+  ctx.fillStyle = "#100a04";
+  ctx.beginPath(); ctx.arc(13.9, -27.5 + breathe * 0.5, 1, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+/* батыр-беркутчи крупным планом: нарядный чапан, тымак, биялай */
+function batyrGlove(armRaise) {
+  // угол руки: от горизонтали к небу
+  const a = -0.35 - armRaise * 0.75;
+  const shx = 12, shy = -158;
+  const ex = shx + Math.cos(a) * 48, ey = shy + Math.sin(a) * 48;
+  const a2 = a - 0.18;
+  return { shx, shy, ex, ey, hx: ex + Math.cos(a2) * 46, hy: ey + Math.sin(a2) * 46, a2 };
+}
+
+function drawBatyr(x, y, sc, armRaise, t) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(sc, sc);
+  const br = Math.sin(t * 1.8) * 1.2; // дыхание
+  // тень
+  ctx.fillStyle = "rgba(20,16,8,.28)";
+  ctx.beginPath(); ctx.ellipse(6, 2, 62, 12, 0, 0, 7); ctx.fill();
+  // сапоги
+  ctx.fillStyle = "#33241a";
+  ctx.beginPath();
+  ctx.moveTo(-24, 0); ctx.lineTo(-24, -30); ctx.lineTo(-8, -30); ctx.lineTo(-8, -6);
+  ctx.quadraticCurveTo(0, -2, 2, 0); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(8, 0); ctx.lineTo(8, -30); ctx.lineTo(24, -30); ctx.lineTo(24, -6);
+  ctx.quadraticCurveTo(32, -2, 34, 0); ctx.closePath(); ctx.fill();
+  // чапан: длинный бордовый халат
+  const cg = ctx.createLinearGradient(-40, -170, 40, -20);
+  cg.addColorStop(0, "#9a3530"); cg.addColorStop(0.6, "#7a2620"); cg.addColorStop(1, "#5e1c18");
+  ctx.fillStyle = cg;
+  ctx.beginPath();
+  ctx.moveTo(-34, -26);
+  ctx.quadraticCurveTo(-30, -100, -22, -162 + br);
+  ctx.quadraticCurveTo(0, -176 + br, 24, -162 + br);
+  ctx.quadraticCurveTo(34, -100, 40, -26);
+  ctx.quadraticCurveTo(4, -34, -34, -26);
+  ctx.closePath(); ctx.fill();
+  // золотая кайма подола и борта
+  ctx.strokeStyle = "#d8a83c"; ctx.lineWidth = 5; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-33, -28); ctx.quadraticCurveTo(4, -36, 39, -28);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(10, -160 + br); ctx.quadraticCurveTo(16, -96, 20, -32);
+  ctx.stroke();
+  // орнамент "қошқар мүйіз" по борту
+  ctx.strokeStyle = "#f0cc70"; ctx.lineWidth = 1.6;
+  for (let i = 0; i < 6; i++) {
+    const yy = -150 + br + i * 20, xx = 11 + i * 1.5;
+    ctx.beginPath();
+    ctx.arc(xx, yy, 4.5, -1.2, 1.9);
+    ctx.arc(xx + 4, yy - 3, 2.4, 2.6, 0.4, true);
+    ctx.stroke();
+  }
+  // пояс с бляхами
+  ctx.fillStyle = "#4a3018";
+  ctx.fillRect(-27, -104 + br, 56, 11);
+  ctx.fillStyle = "#d8a83c";
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.arc(-19 + i * 12, -98.5 + br, 3.2, 0, 7); ctx.fill();
+  }
+  // левая рука (опущена, придерживает пояс)
+  ctx.strokeStyle = "#7a2620"; ctx.lineWidth = 15; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-16, -152 + br); ctx.quadraticCurveTo(-30, -128, -24, -104 + br);
+  ctx.stroke();
+  ctx.fillStyle = "#e0b284";
+  ctx.beginPath(); ctx.arc(-23, -100 + br, 6, 0, 7); ctx.fill();
+  // правая рука с перчаткой (поднимается)
+  const g = batyrGlove(armRaise);
+  ctx.strokeStyle = "#8a2f2a"; ctx.lineWidth = 16;
+  ctx.beginPath();
+  ctx.moveTo(g.shx, g.shy + br);
+  ctx.lineTo(g.ex, g.ey + br);
+  ctx.lineTo(g.hx, g.hy + br);
+  ctx.stroke();
+  // биялай — толстая кожаная перчатка
+  ctx.strokeStyle = "#7a4a26"; ctx.lineWidth = 19;
+  ctx.beginPath();
+  ctx.moveTo(g.ex + (g.hx - g.ex) * 0.45, g.ey + (g.hy - g.ey) * 0.45 + br);
+  ctx.lineTo(g.hx, g.hy + br);
+  ctx.stroke();
+  ctx.fillStyle = "#8a5a30";
+  ctx.beginPath(); ctx.arc(g.hx + Math.cos(g.a2) * 8, g.hy + Math.sin(g.a2) * 8 + br, 11, 0, 7); ctx.fill();
+  // голова: лицо в профиль
+  ctx.fillStyle = "#e0b284";
+  ctx.beginPath();
+  ctx.arc(4, -190 + br, 16, 0, 7); ctx.fill();
+  ctx.beginPath(); // нос
+  ctx.moveTo(18, -194 + br); ctx.quadraticCurveTo(24, -190 + br, 19, -185 + br);
+  ctx.closePath(); ctx.fill();
+  // усы
+  ctx.strokeStyle = "#3a2a1c"; ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(17, -183 + br); ctx.quadraticCurveTo(10, -180 + br, 6, -183 + br);
+  ctx.stroke();
+  // глаз
+  ctx.fillStyle = "#241a10";
+  ctx.beginPath(); ctx.ellipse(11, -193 + br, 2.2, 1.6, 0, 0, 7); ctx.fill();
+  // тымак: меховая шапка с красным верхом и пером
+  ctx.fillStyle = "#6e4a2a";
+  ctx.beginPath(); ctx.ellipse(3, -200 + br, 21, 9, -0.06, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = "#5a3a20";
+  for (let i = 0; i < 8; i++) { // меховая опушка
+    ctx.beginPath();
+    ctx.arc(-16 + i * 5.4, -201 + br + Math.sin(i * 2) * 1.5, 3.4, 0, 7);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#a83232";
+  ctx.beginPath();
+  ctx.moveTo(-15, -203 + br); ctx.quadraticCurveTo(3, -238 + br, 21, -203 + br);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#d8a83c"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-10, -212 + br); ctx.quadraticCurveTo(3, -228 + br, 16, -212 + br);
+  ctx.stroke();
+  // перо филина
+  ctx.strokeStyle = "#e8e0c8"; ctx.lineWidth = 3; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(3, -220 + br); ctx.quadraticCurveTo(9, -234 + br, 5, -246 + br);
+  ctx.stroke();
+  ctx.strokeStyle = "#c8b890"; ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(5, -232 + br); ctx.lineTo(10, -235 + br);
+  ctx.moveTo(5, -238 + br); ctx.lineTo(9, -242 + br);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* катсцена: батыр выпускает беркута */
+function smoothstep(v) {
+  v = Math.max(0, Math.min(1, v));
+  return v * v * (3 - 2 * v);
+}
+function drawLaunch() {
+  const t = G.launchT;
+  const s = Math.min(W / 480, H / 400) * 1.15;
+  const bx = W * 0.36, by = H * 0.93;
+  const armRaise = smoothstep((t - 0.9) / 0.7);
+  drawBatyr(bx, by, s, armRaise, G.t);
+  const g = batyrGlove(armRaise);
+  const gx = bx + (g.hx + Math.cos(g.a2) * 8) * s;
+  const gy = by + (g.hy + Math.sin(g.a2) * 8) * s;
+  if (t < 1.95) {
+    const spread = smoothstep((t - 1.5) / 0.45);
+    drawEaglePerched(gx + 2 * s, gy - 19 * s, s * 1.1, spread, G.t);
+  } else {
+    const ft = smoothstep((t - 1.95) / 1.25);
+    const ex = gx + (W * 0.5 - gx) * ft;
+    const ey = (gy - 22 * s) + (H * 0.42 - gy) * ft;
+    drawEagleModel(ex, ey, s * (1.05 - 0.62 * ft), G.t * 16, 0.08, false, null);
+  }
+  // титры
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(240,234,216,.95)";
+  ctx.font = `600 ${Math.max(18, H * 0.045)}px "Segoe UI", sans-serif`;
+  ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowBlur = 8;
+  ctx.fillText(t < 1.7 ? "Беркутчи поднимает птицу…" : "Аспанға, қыран! В небо!", W / 2, H * 0.14);
+  ctx.restore();
+  // плавный переход в полёт
+  if (t > 2.9) {
+    ctx.fillStyle = `rgba(240,238,228,${smoothstep((t - 2.9) / 0.5) * 0.9})`;
+    ctx.fillRect(0, 0, W, H);
   }
 }
 
@@ -858,15 +1320,21 @@ function frame(dtMs) {
   if (G.state === "fly") {
     updateEagle(dt);
     updateAnimals(dt);
+    tutUpdate(dt);
+  } else if (G.state === "launch") {
+    G.launchT += Math.min(dtMs, 50) / 1000;
+    if (G.launchT > 3.4) beginFly();
   }
+  // дрейф облаков
+  for (const d of decors) if (d.type === "cloud") d.x = (d.x + 7 * dt) % LOOP;
 
   drawSkyGround();
 
-  // объекты мира: painter's algorithm
+  // объекты мира: painter's algorithm (плоские пятна и озёра — первыми)
   const items = [];
   for (const d of decors) {
-    const p = project(d.x, d.z);
-    if (p && p.s > 0.018 && p.x > -160 && p.x < W + 160) items.push({ kind: "decor", o: d, p });
+    const p = project(d.x, d.z, d.hgt || 0);
+    if (p && p.s > 0.018 && p.x > -220 && p.x < W + 220) items.push({ kind: "decor", o: d, p });
   }
   for (const a of animals) {
     if (a.state === "gone") continue;
@@ -875,7 +1343,8 @@ function frame(dtMs) {
   }
   const hp = project(0, 0);
   if (hp && hp.s > 0.02) items.push({ kind: "hunter", p: hp });
-  items.sort((i1, i2) => (i1.o && i1.o.type === "lake" ? 1e9 : i1.p.rz) - (i2.o && i2.o.type === "lake" ? 1e9 : i2.p.rz));
+  const flat = (it) => it.o && (it.o.type === "lake" || it.o.type === "patch");
+  items.sort((i1, i2) => (flat(i1) ? 1e9 : i1.p.rz) - (flat(i2) ? 1e9 : i2.p.rz));
   items.reverse();
   for (const it of items) {
     if (it.kind === "decor") drawDecor(it.o, it.p);
@@ -883,12 +1352,19 @@ function frame(dtMs) {
     else drawHunter(it.p);
   }
 
-  if (G.state === "fly" || G.state === "menu") drawEagle();
+  if (G.state === "launch") drawLaunch();
+  else if (G.state === "fly" || G.state === "menu") drawEagle();
   drawVisionFx();
+  if (G.flyFade > 0) {
+    ctx.fillStyle = `rgba(240,238,228,${Math.min(0.9, G.flyFade)})`;
+    ctx.fillRect(0, 0, W, H);
+    G.flyFade -= dt * 1.8;
+  }
 
   // HUD
   elCoins.textContent = `🪙 ${G.coins}`;
   elFocus.style.width = `${E.focus * 100}%`;
+  elAltDot.style.bottom = `${(E.alt - 20) / (330 - 20) * 100}%`;
   elCarry.style.opacity = E.carrying ? 1 : 0;
   if (E.carrying) elCarry.textContent = `в когтях: ${ANIMALS[E.carrying].name} → неси охотнику`;
   if (E.carrying) {
@@ -924,6 +1400,7 @@ if (location.hash.includes("demo")) {
   if (c) { G.coins = +c[1]; }
   startFlight();
   menu.style.display = "none";
+  if (!location.hash.includes("launch")) { beginFly(); G.flyFade = 0; try { localStorage.setItem("eagle_tut", "1"); } catch {} }
   if (location.hash.includes("vision")) { E.vision = true; E.focus = 1; }
   const ff = /ff(\d+)/.exec(location.hash);
   if (ff) for (let i = 0; i < +ff[1]; i++) frame(16.7);
