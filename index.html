@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Беркутчи — Eagle Hunting</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: #0d1420;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    color: #f0ead8;
+  }
+  #stage { position: relative; width: 100%; height: 100%; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  #coins {
+    position: absolute; top: 14px; left: 16px;
+    font-size: 20px; font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  #locName {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    font-size: 14px; letter-spacing: 3px; opacity: .85;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  #focusWrap {
+    position: absolute; top: 44px; left: 16px; width: 120px; height: 6px;
+    background: rgba(255,255,255,.18); border-radius: 3px; overflow: hidden;
+  }
+  #focusBar { height: 100%; width: 100%; background: #e8c05a; border-radius: 3px; }
+  #carryInfo {
+    position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+    font-size: 13px; opacity: 0; transition: opacity .3s;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  #homeArrow {
+    position: absolute; top: 64px; left: 50%;
+    font-size: 26px; opacity: 0; transition: opacity .3s;
+    transform-origin: 50% 50%;
+    text-shadow: 0 1px 6px rgba(0,0,0,.7);
+  }
+  #msgs {
+    position: absolute; bottom: 26%; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 17px; font-weight: 600; text-align: center;
+    text-shadow: 0 1px 6px rgba(0,0,0,.7);
+  }
+  .msg { animation: msgUp 2.6s forwards; white-space: nowrap; }
+  @keyframes msgUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    12% { opacity: 1; transform: translateY(0); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+  #hintLine {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; opacity: .55; letter-spacing: .5px; white-space: nowrap;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  .hudBtn {
+    position: absolute; pointer-events: auto;
+    background: rgba(15,22,34,.55); border: 1px solid rgba(255,255,255,.25);
+    color: #f0ead8; border-radius: 12px; cursor: pointer;
+    backdrop-filter: blur(4px);
+  }
+  #btnVision { right: 18px; bottom: 18px; width: 64px; height: 64px; font-size: 28px; }
+  #btnMenu { right: 18px; top: 14px; width: 42px; height: 42px; font-size: 18px; }
+  #btnVision:active { background: rgba(232,192,90,.35); }
+
+  /* ---------- меню ---------- */
+  #menu {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(8,12,22,.82), rgba(8,12,22,.94));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 20px; overflow-y: auto;
+    transition: opacity .3s; z-index: 10;
+  }
+  #menu.hidden { opacity: 0; pointer-events: none; }
+  #menu h1 { font-size: clamp(26px, 5vw, 42px); letter-spacing: 4px; }
+  #menu .tagline { font-size: 14px; opacity: .75; text-align: center; max-width: 520px; line-height: 1.5; }
+  #menuCoins { font-size: 18px; font-weight: 600; }
+  #btnFly {
+    font-size: 20px; letter-spacing: 4px; font-weight: 600;
+    padding: 14px 52px; border-radius: 14px; cursor: pointer;
+    background: linear-gradient(180deg, #e8c05a, #c89a34);
+    border: none; color: #241a06;
+    box-shadow: 0 4px 18px rgba(232,192,90,.35);
+  }
+  #btnFly:hover { filter: brightness(1.08); }
+  #locGrid {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 720px;
+  }
+  .locCard {
+    width: 128px; padding: 10px 8px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.14);
+    text-align: center; font-size: 13px; line-height: 1.45;
+    transition: border-color .15s, background .15s;
+  }
+  .locCard:hover { background: rgba(255,255,255,.12); }
+  .locCard.active { border-color: #e8c05a; background: rgba(232,192,90,.12); }
+  .locCard.locked { opacity: .6; }
+  .locCard .em { font-size: 26px; display: block; margin-bottom: 4px; }
+  .locCard .price { font-size: 12px; opacity: .8; }
+  #ctrlHelp { font-size: 12px; opacity: .6; text-align: center; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div id="coins">🪙 0</div>
+    <div id="locName"></div>
+    <div id="focusWrap"><div id="focusBar"></div></div>
+    <div id="carryInfo"></div>
+    <div id="homeArrow">⬆</div>
+    <div id="msgs"></div>
+    <div id="hintLine">←→ вираж · ↑ выше · ↓ пике · V — зоркий глаз · охоться и неси добычу беркутчи</div>
+    <button class="hudBtn" id="btnVision" title="Зоркий глаз (V)">👁</button>
+    <button class="hudBtn" id="btnMenu" title="Меню (Esc)">☰</button>
+  </div>
+  <div id="menu">
+    <h1>🦅 БЕРКУТЧИ</h1>
+    <div class="tagline">Казахстан с высоты полёта беркута. Охотник выпускает птицу — ты ведёшь её:
+      выслеживай зверьков зорким глазом, пикируй, хватай и приноси добычу хозяину.
+      Монеты открывают новые края.</div>
+    <div id="menuCoins">🪙 0</div>
+    <div id="locGrid"></div>
+    <button id="btnFly">ЛЕТЕТЬ</button>
+    <div id="ctrlHelp">←→ — вираж, ↑ — набор высоты, ↓ — пике, V (удерж.) — зоркий глаз, Esc — меню<br>
+      на тачскрине: веди пальцем — руль, кнопка 👁 — зрение</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Беркутчи — псевдо-3D охота с беркутом над Казахстаном.
+   Billboard-проекция: мир на торе (координаты x/z зациклены),
+   камера летит за птицей. Один файл, без зависимостей.
+   ============================================================ */
+
+const cv = document.getElementById("game");
+const ctx = cv.getContext("2d");
+let W = 960, H = 540, HOR = 220;
+
+function fit() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  HOR = H * 0.42;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+fit();
+addEventListener("resize", fit);
+
+/* ---------- сохранения ---------- */
+const store = {
+  get coins() { try { return +localStorage.getItem("eagle_coins") || 0; } catch { return 0; } },
+  set coins(v) { try { localStorage.setItem("eagle_coins", Math.floor(v)); } catch {} },
+  get unlocked() { try { return JSON.parse(localStorage.getItem("eagle_unlocked")) || ["steppe"]; } catch { return ["steppe"]; } },
+  set unlocked(v) { try { localStorage.setItem("eagle_unlocked", JSON.stringify(v)); } catch {} },
+  get loc() { try { return localStorage.getItem("eagle_loc") || "steppe"; } catch { return "steppe"; } },
+  set loc(v) { try { localStorage.setItem("eagle_loc", v); } catch {} },
+};
+
+/* ---------- локации ---------- */
+const LOCS = {
+  steppe: {
+    name: "СТЕПЬ САРЫАРКА", em: "🌾", price: 0, mult: 1,
+    skyTop: [126, 178, 216], skyBot: [235, 238, 218],
+    far: [205, 196, 150], near: [156, 148, 92],
+    ridges: [{ c: "#b9ad84", b: 10, a: 16, f: 1.7 }, { c: "#a99d72", b: 0, a: 10, f: 2.6 }],
+    decor: { grass: 130, stone: 40, shrub: 30, yurt: 8, flower: 20 },
+    animals: { mouse: 3, hamster: 3, hare: 3, rabbit: 3 },
+  },
+  alatau: {
+    name: "ГОРЫ АЛАТАУ", em: "🏔", price: 150, mult: 1.2,
+    skyTop: [104, 164, 214], skyBot: [226, 238, 240],
+    far: [150, 176, 132], near: [104, 140, 88],
+    ridges: [{ c: "#e8eef4", b: 26, a: 44, f: 1.2 }, { c: "#7d94ac", b: 10, a: 30, f: 1.8 }, { c: "#5e7a62", b: 0, a: 16, f: 2.8 }],
+    decor: { fir: 70, rock: 50, grass: 90, flower: 25 },
+    animals: { marmot: 4, hare: 3, rabbit: 2, fox: 2 },
+  },
+  assy: {
+    name: "ПЛАТО АССЫ", em: "🔭", price: 300, mult: 1.4,
+    skyTop: [96, 150, 210], skyBot: [222, 232, 238],
+    far: [168, 174, 128], near: [118, 128, 80],
+    ridges: [{ c: "#dfe7ee", b: 20, a: 36, f: 1.1 }, { c: "#8a9a92", b: 6, a: 20, f: 2.2 }],
+    decor: { grass: 120, flower: 60, stone: 40, dome: 3, shrub: 20 },
+    animals: { marmot: 5, hare: 3, mouse: 2, fox: 1 },
+  },
+  kolsai: {
+    name: "ОЗЁРА КОЛЬСАЙ", em: "🏞", price: 500, mult: 1.6,
+    skyTop: [88, 152, 200], skyBot: [214, 232, 230],
+    far: [120, 150, 110], near: [76, 112, 70],
+    ridges: [{ c: "#c8d8e2", b: 24, a: 40, f: 1.3 }, { c: "#4e6e56", b: 8, a: 26, f: 3.2 }],
+    decor: { pine: 90, rock: 30, grass: 80, lake: 3 },
+    animals: { fox: 3, hare: 4, rabbit: 3, mouse: 1 },
+  },
+  charyn: {
+    name: "ЧАРЫНСКИЙ КАНЬОН", em: "🏜", price: 800, mult: 2,
+    skyTop: [120, 168, 208], skyBot: [244, 228, 200],
+    far: [216, 178, 132], near: [176, 130, 86],
+    ridges: [{ c: "#c98a5c", b: 18, a: 30, f: 1.5, mesa: true }, { c: "#a86a44", b: 4, a: 20, f: 2.4, mesa: true }],
+    decor: { pillar: 40, stone: 50, dryshrub: 50, grass: 30 },
+    animals: { fox: 3, mouse: 3, hamster: 3, hare: 2 },
+  },
+};
+const LOC_ORDER = ["steppe", "alatau", "assy", "kolsai", "charyn"];
+
+/* ---------- зверьки ---------- */
+const ANIMALS = {
+  mouse:   { name: "мышь",   coins: 25, size: 7,  spd: 150, radius: 15, body: "#8f8a84", detail: "#6e6a64" },
+  hamster: { name: "хомяк",  coins: 20, size: 9,  spd: 110, radius: 17, body: "#d8b070", detail: "#f0e2c4" },
+  rabbit:  { name: "кролик", coins: 12, size: 11, spd: 210, radius: 21, body: "#cfc8bc", detail: "#f2efe8" },
+  hare:    { name: "заяц",   coins: 15, size: 12, spd: 250, radius: 21, body: "#a8967c", detail: "#d8cbb4" },
+  marmot:  { name: "сурок",  coins: 18, size: 13, spd: 170, radius: 19, body: "#a07848", detail: "#c89e64" },
+  fox:     { name: "лиса",   coins: 40, size: 16, spd: 290, radius: 24, body: "#d4732e", detail: "#f0ead8" },
+};
+
+/* ---------- звук ---------- */
+const snd = {
+  ac: null, windGain: null, windFilter: null,
+  ensure() {
+    if (this.ac) { if (this.ac.state === "suspended") this.ac.resume(); return; }
+    try {
+      this.ac = new (window.AudioContext || window.webkitAudioContext)();
+      const len = this.ac.sampleRate * 2;
+      const buf = this.ac.createBuffer(1, len, this.ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = this.ac.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      this.windFilter = this.ac.createBiquadFilter();
+      this.windFilter.type = "lowpass"; this.windFilter.frequency.value = 500;
+      this.windGain = this.ac.createGain(); this.windGain.gain.value = 0;
+      src.connect(this.windFilter).connect(this.windGain).connect(this.ac.destination);
+      src.start();
+    } catch {}
+  },
+  wind(level) {
+    if (!this.windGain) return;
+    this.windGain.gain.linearRampToValueAtTime(level * 0.09, this.ac.currentTime + 0.15);
+    this.windFilter.frequency.linearRampToValueAtTime(350 + level * 900, this.ac.currentTime + 0.15);
+  },
+  beep(f, dur, type = "sine", vol = 0.07, to = null) {
+    if (!this.ac) return;
+    const t = this.ac.currentTime;
+    const o = this.ac.createOscillator(), g = this.ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (to) o.frequency.linearRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(this.ac.destination);
+    o.start(t); o.stop(t + dur);
+  },
+  cry() { this.beep(1300, 0.7, "sawtooth", 0.04, 480); },
+  catch() { this.beep(520, 0.1, "square", 0.06, 700); },
+  miss() { this.beep(130, 0.25, "sawtooth", 0.06, 70); },
+  coin() { this.beep(660, 0.09); setTimeout(() => this.beep(880, 0.09), 90); setTimeout(() => this.beep(1100, 0.12), 180); },
+  deny() { this.beep(200, 0.2, "square", 0.05, 160); },
+};
+
+/* ---------- состояние ---------- */
+const LOOP = 4200;
+const G = { state: "menu", coins: store.coins, locKey: store.loc, t: 0 };
+if (!store.unlocked.includes(G.locKey)) G.locKey = "steppe";
+
+const E = { // беркут
+  x: 0, z: 300, heading: 0, alt: 150, speed: 230,
+  bank: 0, carrying: null, focus: 1, vision: false, diving: false, flap: 0,
+};
+
+let decors = [], animals = [], focal = 320;
+
+function wrap(d) {
+  d %= LOOP;
+  if (d > LOOP / 2) d -= LOOP;
+  if (d < -LOOP / 2) d += LOOP;
+  return d;
+}
+function dist(ax, az, bx, bz) {
+  const dx = wrap(ax - bx), dz = wrap(az - bz);
+  return Math.hypot(dx, dz);
+}
+
+function project(wx, wz, hgt = 0) {
+  const dx = wrap(wx - E.x), dz = wrap(wz - E.z);
+  const cos = Math.cos(-E.heading), sin = Math.sin(-E.heading);
+  const rx = dx * cos - dz * sin;
+  const rz = dx * sin + dz * cos;
+  if (rz < 10) return null;
+  const s = focal / rz;
+  return { x: W / 2 + rx * s, y: HOR + (E.alt - hgt) * s, s, rz };
+}
+
+/* ---------- генерация мира ---------- */
+function buildWorld() {
+  const L = LOCS[G.locKey];
+  decors = [];
+  for (const [type, count] of Object.entries(L.decor)) {
+    for (let i = 0; i < count; i++) {
+      decors.push({
+        type,
+        x: Math.random() * LOOP, z: Math.random() * LOOP,
+        s: 0.7 + Math.random() * 0.7,
+        seed: Math.random(),
+      });
+    }
+  }
+  // не ставить декор на базу охотника
+  decors = decors.filter(d => d.type === "lake" || dist(d.x, d.z, 0, 0) > 160);
+  animals = [];
+  for (let i = 0; i < 14; i++) animals.push(makeAnimal());
+}
+
+function pickSpecies() {
+  const table = LOCS[G.locKey].animals;
+  let sum = 0;
+  for (const w of Object.values(table)) sum += w;
+  let r = Math.random() * sum;
+  for (const [k, w] of Object.entries(table)) { r -= w; if (r <= 0) return k; }
+  return Object.keys(table)[0];
+}
+
+function makeAnimal(nearEagle) {
+  const sp = pickSpecies();
+  let x, z;
+  if (nearEagle) { // впереди по курсу, но не вплотную
+    const ang = E.heading + (Math.random() - 0.5) * 1.6;
+    const d = 700 + Math.random() * 1200;
+    x = E.x + Math.sin(ang) * d; z = E.z + Math.cos(ang) * d;
+  } else {
+    x = Math.random() * LOOP; z = Math.random() * LOOP;
+  }
+  return {
+    sp, x: (x % LOOP + LOOP) % LOOP, z: (z % LOOP + LOOP) % LOOP,
+    state: "calm", dir: Math.random() * 7, t: Math.random() * 3, fleeT: 0, hopT: Math.random() * 2,
+  };
+}
+
+/* ---------- ввод ---------- */
+const keys = {};
+addEventListener("keydown", (e) => {
+  if (e.code === "Escape") { toggleMenu(); return; }
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(e.code)) e.preventDefault();
+  keys[e.code] = true;
+  if (e.code === "KeyV") E.vision = true;
+});
+addEventListener("keyup", (e) => {
+  keys[e.code] = false;
+  if (e.code === "KeyV") E.vision = false;
+});
+
+let steer = 0, pitchTouch = 0, ptrId = null, ptrX = 0, ptrY = 0;
+cv.addEventListener("pointerdown", (e) => {
+  snd.ensure();
+  ptrId = e.pointerId; ptrX = e.clientX; ptrY = e.clientY;
+});
+addEventListener("pointermove", (e) => {
+  if (e.pointerId !== ptrId) return;
+  steer = Math.max(-1, Math.min(1, (e.clientX - ptrX) / 90));
+  pitchTouch = Math.max(-1, Math.min(1, (e.clientY - ptrY) / 90));
+});
+addEventListener("pointerup", (e) => {
+  if (e.pointerId === ptrId) { ptrId = null; steer = 0; pitchTouch = 0; }
+});
+const btnVision = document.getElementById("btnVision");
+btnVision.addEventListener("pointerdown", (e) => { e.stopPropagation(); snd.ensure(); E.vision = true; });
+addEventListener("pointerup", () => { if (!keys.KeyV) E.vision = false; });
+document.getElementById("btnMenu").addEventListener("click", toggleMenu);
+
+/* ---------- HUD ---------- */
+const elCoins = document.getElementById("coins");
+const elMenuCoins = document.getElementById("menuCoins");
+const elLoc = document.getElementById("locName");
+const elFocus = document.getElementById("focusBar");
+const elCarry = document.getElementById("carryInfo");
+const elArrow = document.getElementById("homeArrow");
+const elMsgs = document.getElementById("msgs");
+
+function msg(text) {
+  const d = document.createElement("div");
+  d.className = "msg"; d.textContent = text;
+  elMsgs.appendChild(d);
+  setTimeout(() => d.remove(), 2600);
+}
+
+/* ---------- меню ---------- */
+const menu = document.getElementById("menu");
+const locGrid = document.getElementById("locGrid");
+
+function renderMenu() {
+  elMenuCoins.textContent = `🪙 ${G.coins}`;
+  locGrid.innerHTML = "";
+  const unlocked = store.unlocked;
+  for (const key of LOC_ORDER) {
+    const L = LOCS[key];
+    const owned = unlocked.includes(key);
+    const card = document.createElement("div");
+    card.className = "locCard" + (key === G.locKey ? " active" : "") + (owned ? "" : " locked");
+    card.innerHTML = `<span class="em">${L.em}</span>${L.name}<br><span class="price">${owned ? (key === G.locKey ? "— выбрано —" : "открыто") : `🪙 ${L.price}`}</span>`;
+    card.addEventListener("click", () => {
+      if (owned) {
+        G.locKey = key; store.loc = key; renderMenu();
+      } else if (G.coins >= L.price) {
+        G.coins -= L.price; store.coins = G.coins;
+        store.unlocked = [...unlocked, key];
+        G.locKey = key; store.loc = key;
+        snd.ensure(); snd.coin();
+        msg(`${L.em} Открыт новый край: ${L.name}!`);
+        renderMenu();
+      } else {
+        snd.ensure(); snd.deny();
+        card.animate([{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(5px)" }, { transform: "translateX(0)" }], { duration: 220 });
+      }
+    });
+    locGrid.appendChild(card);
+  }
+}
+
+document.getElementById("btnFly").addEventListener("click", startFlight);
+
+function startFlight() {
+  snd.ensure();
+  buildWorld();
+  E.x = 0; E.z = 140; E.heading = 0; E.alt = 150; E.bank = 0;
+  E.carrying = null; E.focus = 1; E.vision = false;
+  G.state = "fly";
+  menu.classList.add("hidden");
+  elLoc.textContent = LOCS[G.locKey].name;
+  snd.cry();
+  msg("Беркут в небе! Ищи зверька и пикируй ↓");
+}
+
+function toggleMenu() {
+  if (G.state === "fly") {
+    G.state = "menu";
+    menu.classList.remove("hidden");
+    renderMenu();
+    snd.wind(0);
+  } else {
+    menu.classList.add("hidden");
+    G.state = "fly";
+  }
+}
+
+/* ---------- логика полёта ---------- */
+function updateEagle(dt) {
+  const turnIn = (keys.ArrowLeft || keys.KeyA ? -1 : 0) + (keys.ArrowRight || keys.KeyD ? 1 : 0) + steer;
+  E.bank += (Math.max(-1, Math.min(1, turnIn)) - E.bank) * Math.min(1, dt * 6);
+  E.heading += E.bank * 1.5 * dt;
+
+  const pitchIn = (keys.ArrowUp || keys.KeyW ? -1 : 0) + (keys.ArrowDown || keys.KeyS ? 1 : 0) + pitchTouch;
+  E.diving = pitchIn > 0.3;
+  if (E.diving) {
+    E.alt -= 260 * dt;
+    E.speed += (430 - E.speed) * Math.min(1, dt * 2.5);
+  } else if (pitchIn < -0.3) {
+    E.alt += 130 * dt;
+    E.speed += (190 - E.speed) * Math.min(1, dt * 2);
+  } else {
+    E.alt += 14 * dt; // плавное выравнивание вверх
+    E.speed += (240 - E.speed) * Math.min(1, dt * 1.5);
+  }
+  E.alt = Math.max(20, Math.min(330, E.alt));
+
+  E.x = (E.x + Math.sin(E.heading) * E.speed * dt % LOOP + LOOP) % LOOP;
+  E.z = (E.z + Math.cos(E.heading) * E.speed * dt % LOOP + LOOP) % LOOP;
+
+  // зоркий глаз
+  if (E.vision && E.focus > 0) {
+    E.focus = Math.max(0, E.focus - dt / 4);
+    if (E.focus === 0) E.vision = false;
+  } else if (!E.vision) {
+    E.focus = Math.min(1, E.focus + dt / 6);
+  }
+  focal += ((E.vision ? 520 : 320) - focal) * Math.min(1, dt * 5);
+
+  E.flap += dt * (E.diving ? 2 : 7);
+  snd.wind(Math.min(1, E.speed / 430) * (G.state === "fly" ? 1 : 0));
+
+  // ловля
+  if (!E.carrying && E.alt < 30) {
+    for (const a of animals) {
+      if (a.state === "gone") continue;
+      const sp = ANIMALS[a.sp];
+      if (dist(E.x, E.z, a.x, a.z) < sp.radius + 14) {
+        E.carrying = a.sp;
+        a.state = "gone"; a.respawnT = 6 + Math.random() * 6;
+        snd.catch();
+        msg(`Схватил! ${sp.name} в когтях — неси беркутчи 🏠`);
+        break;
+      }
+    }
+  }
+  // доставка охотнику
+  if (E.carrying && dist(E.x, E.z, 0, 0) < 120 && E.alt < 80) {
+    const sp = ANIMALS[E.carrying];
+    const reward = Math.round(sp.coins * LOCS[G.locKey].mult);
+    G.coins += reward; store.coins = G.coins;
+    msg(`Беркутчи доволен: ${sp.name} — +${reward} 🪙`);
+    snd.coin();
+    E.carrying = null;
+  }
+}
+
+function updateAnimals(dt) {
+  for (const a of animals) {
+    const sp = ANIMALS[a.sp];
+    if (a.state === "gone") {
+      a.respawnT -= dt;
+      if (a.respawnT <= 0) Object.assign(a, makeAnimal(true));
+      continue;
+    }
+    const dEagle = dist(E.x, E.z, a.x, a.z);
+    if (a.state === "calm") {
+      a.hopT -= dt;
+      if (a.hopT <= 0) { a.hopT = 1 + Math.random() * 2.5; a.dir = Math.random() * 7; }
+      a.x += Math.sin(a.dir) * sp.spd * 0.25 * dt;
+      a.z += Math.cos(a.dir) * sp.spd * 0.25 * dt;
+      // замечает беркута: близко и низко
+      if (dEagle < 300 && E.alt < 170) {
+        a.state = "flee"; a.fleeT = 2.6;
+        const dx = wrap(a.x - E.x), dz = wrap(a.z - E.z);
+        a.dir = Math.atan2(dx, dz) + (Math.random() - 0.5) * 0.8;
+      }
+    } else { // flee
+      a.fleeT -= dt;
+      a.dir += (Math.random() - 0.5) * 3 * dt;
+      a.x += Math.sin(a.dir) * sp.spd * dt;
+      a.z += Math.cos(a.dir) * sp.spd * dt;
+      if (a.fleeT <= 0) {
+        a.state = "gone"; a.respawnT = 5 + Math.random() * 8;
+        if (dEagle < 420) msg(`${sp.name[0].toUpperCase() + sp.name.slice(1)} юркнул в нору…`);
+      }
+    }
+    a.x = (a.x % LOOP + LOOP) % LOOP;
+    a.z = (a.z % LOOP + LOOP) % LOOP;
+    if (dEagle > 2500) Object.assign(a, makeAnimal(true));
+  }
+}
+
+/* ---------- отрисовка ---------- */
+function mixc(c1, c2, t) {
+  return `rgb(${Math.round(c1[0] + (c2[0] - c1[0]) * t)},${Math.round(c1[1] + (c2[1] - c1[1]) * t)},${Math.round(c1[2] + (c2[2] - c1[2]) * t)})`;
+}
+
+function drawSkyGround() {
+  const L = LOCS[G.locKey];
+  let g = ctx.createLinearGradient(0, 0, 0, HOR);
+  g.addColorStop(0, mixc(L.skyTop, L.skyTop, 0));
+  g.addColorStop(1, mixc(L.skyBot, L.skyBot, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, HOR + 1);
+  // солнце
+  const sunX = W * 0.5 - wrapAngle(E.heading) / Math.PI * W * 0.9;
+  ctx.fillStyle = "rgba(255,240,190,.5)";
+  ctx.beginPath(); ctx.arc(sunX, HOR * 0.4, 46, 0, 7); ctx.fill();
+  ctx.fillStyle = "rgba(255,246,214,.95)";
+  ctx.beginPath(); ctx.arc(sunX, HOR * 0.4, 26, 0, 7); ctx.fill();
+  // хребты на горизонте (параллакс от поворота)
+  L.ridges.forEach((r, i) => {
+    const off = E.heading * (140 + i * 90);
+    ctx.fillStyle = r.c;
+    ctx.beginPath();
+    ctx.moveTo(0, HOR + 1);
+    for (let x = 0; x <= W; x += 10) {
+      let v = Math.sin((x + off) * 0.011 * r.f) * 0.6 + Math.sin((x + off) * 0.027 * r.f + 2) * 0.4;
+      if (r.mesa) v = Math.max(-0.55, Math.min(0.55, v * 1.9));
+      ctx.lineTo(x, HOR - r.b - r.a * (0.5 + 0.5 * v));
+    }
+    ctx.lineTo(W, HOR + 1);
+    ctx.closePath(); ctx.fill();
+  });
+  // земля
+  g = ctx.createLinearGradient(0, HOR, 0, H);
+  g.addColorStop(0, mixc(L.far, L.skyBot, 0.55));
+  g.addColorStop(0.25, mixc(L.far, L.far, 0));
+  g.addColorStop(1, mixc(L.near, L.near, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, HOR, W, H - HOR);
+}
+function wrapAngle(a) {
+  a %= Math.PI * 2;
+  if (a > Math.PI) a -= Math.PI * 2;
+  if (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+/* декорации */
+function drawDecor(d, p) {
+  const s = p.s * 46 * d.s;
+  const x = p.x, y = p.y;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.15, Math.min(1, 1.25 - p.rz / 2400));
+  switch (d.type) {
+    case "grass":
+      ctx.strokeStyle = "#7d8f4a"; ctx.lineWidth = Math.max(1, s * 0.05);
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.1, y); ctx.lineTo(x - s * 0.14, y - s * 0.22);
+      ctx.moveTo(x, y); ctx.lineTo(x, y - s * 0.3);
+      ctx.moveTo(x + s * 0.1, y); ctx.lineTo(x + s * 0.15, y - s * 0.2);
+      ctx.stroke();
+      break;
+    case "flower":
+      ctx.fillStyle = d.seed < 0.5 ? "#c0392b" : "#c8b0e0";
+      ctx.fillRect(x - s * 0.04, y - s * 0.16, s * 0.09, s * 0.09);
+      break;
+    case "stone":
+      ctx.fillStyle = "#9a8f78";
+      ctx.beginPath(); ctx.ellipse(x, y - s * 0.08, s * 0.22, s * 0.13, 0, 0, 7); ctx.fill();
+      break;
+    case "shrub": case "dryshrub":
+      ctx.fillStyle = d.type === "shrub" ? "#6d8748" : "#9a7d4e";
+      ctx.beginPath(); ctx.arc(x, y - s * 0.14, s * 0.2, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x - s * 0.16, y - s * 0.06, s * 0.14, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + s * 0.15, y - s * 0.07, s * 0.15, 0, 7); ctx.fill();
+      break;
+    case "fir": case "pine": {
+      const h = s * (d.type === "fir" ? 0.9 : 1.1);
+      ctx.fillStyle = "#4a3524";
+      ctx.fillRect(x - s * 0.03, y - h * 0.18, s * 0.06, h * 0.18);
+      ctx.fillStyle = d.type === "fir" ? "#2e5638" : "#3a6844";
+      for (let i = 0; i < 3; i++) {
+        const t = i / 3, ww = s * 0.34 * (1 - t * 0.55), yy = y - h * (0.16 + t * 0.28);
+        ctx.beginPath();
+        ctx.moveTo(x - ww, yy); ctx.lineTo(x + ww, yy); ctx.lineTo(x, yy - h * 0.34);
+        ctx.closePath(); ctx.fill();
+      }
+      break;
+    }
+    case "rock":
+      ctx.fillStyle = "#8a8478";
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.3, y);
+      ctx.lineTo(x - s * 0.12, y - s * 0.4); ctx.lineTo(x + s * 0.08, y - s * 0.26);
+      ctx.lineTo(x + s * 0.3, y);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.25)";
+      ctx.beginPath();
+      ctx.moveTo(x - s * 0.12, y - s * 0.4); ctx.lineTo(x - s * 0.02, y - s * 0.3); ctx.lineTo(x - s * 0.18, y - s * 0.1);
+      ctx.closePath(); ctx.fill();
+      break;
+    case "pillar": { // чарынские "замки"
+      const h = s * (1.1 + d.seed * 0.7);
+      ctx.fillStyle = "#c07848";
+      ctx.fillRect(x - s * 0.16, y - h, s * 0.32, h);
+      ctx.fillStyle = "#d99560";
+      ctx.fillRect(x - s * 0.16, y - h, s * 0.1, h);
+      ctx.fillStyle = "#a05c34";
+      for (let i = 1; i < 4; i++) ctx.fillRect(x - s * 0.16, y - h * i / 4, s * 0.32, Math.max(1, s * 0.02));
+      ctx.fillStyle = "#c07848";
+      ctx.beginPath(); ctx.ellipse(x, y - h, s * 0.2, s * 0.07, 0, 0, 7); ctx.fill();
+      break;
+    }
+    case "yurt":
+      ctx.fillStyle = "#ece4d0";
+      ctx.beginPath(); ctx.ellipse(x, y - s * 0.16, s * 0.3, s * 0.18, 0, Math.PI, 0); ctx.fill();
+      ctx.fillRect(x - s * 0.3, y - s * 0.17, s * 0.6, s * 0.17);
+      ctx.strokeStyle = "#a2543a"; ctx.lineWidth = Math.max(1, s * 0.02);
+      ctx.beginPath(); ctx.moveTo(x - s * 0.3, y - s * 0.16); ctx.lineTo(x + s * 0.3, y - s * 0.16); ctx.stroke();
+      ctx.fillStyle = "#6e3222";
+      ctx.fillRect(x - s * 0.06, y - s * 0.14, s * 0.12, s * 0.14);
+      break;
+    case "dome": // обсерватория Ассы-Тургень
+      ctx.fillStyle = "#e8ecf0";
+      ctx.beginPath(); ctx.ellipse(x, y - s * 0.3, s * 0.28, s * 0.28, 0, Math.PI, 0); ctx.fill();
+      ctx.fillRect(x - s * 0.28, y - s * 0.3, s * 0.56, s * 0.3);
+      ctx.fillStyle = "#b8c0c8";
+      ctx.fillRect(x - s * 0.04, y - s * 0.56, s * 0.08, s * 0.2);
+      break;
+    case "lake": {
+      const rw = s * 4.5, rh = s * 1.4;
+      const lg = ctx.createRadialGradient(x, y, rw * 0.1, x, y, rw);
+      lg.addColorStop(0, "#7fc4d8"); lg.addColorStop(1, "#3a7a9c");
+      ctx.fillStyle = lg;
+      ctx.beginPath(); ctx.ellipse(x, y, rw, rh, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(x, y, rw * 0.7, rh * 0.6, 0, 0, 7); ctx.stroke();
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+function drawAnimal(a, p) {
+  const sp = ANIMALS[a.sp];
+  const s = p.s * sp.size * 1.15;
+  const x = p.x, y = p.y;
+  const run = a.state === "flee";
+  const wob = run ? Math.sin(G.t * 24 + a.dir) * s * 0.12 : 0;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.2, Math.min(1, 1.3 - p.rz / 2200));
+  // тень
+  ctx.fillStyle = "rgba(30,25,15,.25)";
+  ctx.beginPath(); ctx.ellipse(x, y, s * 0.85, s * 0.3, 0, 0, 7); ctx.fill();
+  // тело
+  ctx.fillStyle = sp.body;
+  ctx.beginPath(); ctx.ellipse(x, y - s * 0.45 + wob, s * 0.7, s * 0.5, 0, 0, 7); ctx.fill();
+  // голова по направлению бега
+  const hx = x + Math.sin(a.dir - E.heading) * s * 0.6;
+  const hy = y - s * 0.55 + wob;
+  ctx.beginPath(); ctx.arc(hx, hy, s * 0.32, 0, 7); ctx.fill();
+  if (a.sp === "hare" || a.sp === "rabbit") { // уши
+    ctx.strokeStyle = sp.body; ctx.lineWidth = s * 0.16; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(hx - s * 0.1, hy - s * 0.2); ctx.lineTo(hx - s * 0.16, hy - s * 0.62);
+    ctx.moveTo(hx + s * 0.1, hy - s * 0.2); ctx.lineTo(hx + s * 0.18, hy - s * 0.6);
+    ctx.stroke();
+  }
+  if (a.sp === "fox") { // хвост
+    ctx.strokeStyle = sp.body; ctx.lineWidth = s * 0.3; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x - Math.sin(a.dir - E.heading) * s * 0.6, y - s * 0.4);
+    ctx.lineTo(x - Math.sin(a.dir - E.heading) * s * 1.2, y - s * 0.75);
+    ctx.stroke();
+    ctx.fillStyle = sp.detail;
+    ctx.beginPath(); ctx.arc(x - Math.sin(a.dir - E.heading) * s * 1.2, y - s * 0.75, s * 0.14, 0, 7); ctx.fill();
+  }
+  if (a.sp === "marmot" && !run) { // столбиком
+    ctx.fillStyle = sp.body;
+    ctx.beginPath(); ctx.ellipse(x, y - s * 0.75, s * 0.32, s * 0.55, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = sp.detail;
+  ctx.beginPath(); ctx.ellipse(x, y - s * 0.3 + wob, s * 0.34, s * 0.2, 0, 0, 7); ctx.fill();
+  // зоркий глаз: подсветка
+  if (E.vision) {
+    ctx.strokeStyle = "rgba(232,192,90,.95)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y - s * 0.4, s * 1.5 + 6 + Math.sin(G.t * 6) * 3, 0, 7); ctx.stroke();
+    ctx.fillStyle = "rgba(232,192,90,.95)";
+    ctx.font = `${Math.max(11, Math.min(15, s))}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(sp.name, x, y - s * 1.9 - 8);
+  }
+  ctx.restore();
+}
+
+function drawHunter(p) {
+  const s = p.s * 60;
+  const x = p.x, y = p.y;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.25, Math.min(1, 1.3 - p.rz / 2400));
+  ctx.fillStyle = "rgba(30,25,15,.25)";
+  ctx.beginPath(); ctx.ellipse(x, y, s * 0.5, s * 0.14, 0, 0, 7); ctx.fill();
+  // конь
+  ctx.fillStyle = "#6e4a2a";
+  ctx.beginPath(); ctx.ellipse(x, y - s * 0.34, s * 0.42, s * 0.2, 0, 0, 7); ctx.fill();
+  ctx.fillRect(x - s * 0.34, y - s * 0.34, s * 0.07, s * 0.34);
+  ctx.fillRect(x + s * 0.24, y - s * 0.34, s * 0.07, s * 0.34);
+  ctx.beginPath(); ctx.ellipse(x + s * 0.48, y - s * 0.52, s * 0.13, s * 0.17, 0.5, 0, 7); ctx.fill();
+  // всадник в чапане
+  ctx.fillStyle = "#3566a8";
+  ctx.beginPath(); ctx.ellipse(x - s * 0.05, y - s * 0.66, s * 0.16, s * 0.24, 0, 0, 7); ctx.fill();
+  // поднятая рука с перчаткой
+  ctx.strokeStyle = "#3566a8"; ctx.lineWidth = s * 0.09; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x - s * 0.02, y - s * 0.74); ctx.lineTo(x + s * 0.28, y - s * 1.02); ctx.stroke();
+  ctx.fillStyle = "#8a5a33";
+  ctx.beginPath(); ctx.arc(x + s * 0.3, y - s * 1.04, s * 0.08, 0, 7); ctx.fill();
+  // лицо и калпак
+  ctx.fillStyle = "#e0b284";
+  ctx.beginPath(); ctx.arc(x - s * 0.05, y - s * 0.98, s * 0.1, 0, 7); ctx.fill();
+  ctx.fillStyle = "#f2ede0";
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.17, y - s * 1.02); ctx.lineTo(x + s * 0.07, y - s * 1.02); ctx.lineTo(x - s * 0.05, y - s * 1.24);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawEagle() {
+  const cx = W / 2, cy = H * 0.68;
+  const flapY = Math.sin(E.flap) * (E.diving ? 4 : 14);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(E.bank * 0.45);
+  const span = E.diving ? 62 : 108;
+  // крылья
+  const wg = ctx.createLinearGradient(0, -30, 0, 16);
+  wg.addColorStop(0, "#5c4026"); wg.addColorStop(1, "#33230f");
+  ctx.fillStyle = wg;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(side * 7, -4);
+    ctx.quadraticCurveTo(side * span * 0.55, -26 - flapY, side * span, -14 - flapY * 1.6);
+    for (let i = 0; i < 5; i++) {
+      const t = 1 - i / 5;
+      ctx.lineTo(side * span * (0.55 + t * 0.45) - side * 6, -2 - flapY * t * 1.2 + (1 - t) * 10);
+    }
+    ctx.quadraticCurveTo(side * 26, 12, side * 6, 9);
+    ctx.closePath(); ctx.fill();
+  }
+  // хвост-веер
+  ctx.fillStyle = "#4a3018";
+  ctx.beginPath();
+  ctx.moveTo(-7, 8);
+  ctx.lineTo(-14, 34); ctx.lineTo(-5, 30); ctx.lineTo(0, 37); ctx.lineTo(5, 30); ctx.lineTo(14, 34); ctx.lineTo(7, 8);
+  ctx.closePath(); ctx.fill();
+  // тело
+  const bg = ctx.createLinearGradient(0, -18, 0, 14);
+  bg.addColorStop(0, "#6e4e2c"); bg.addColorStop(1, "#3c2a14");
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.ellipse(0, 0, 11, 20, 0, 0, 7); ctx.fill();
+  // золотой затылок и голова
+  ctx.fillStyle = "#c9982f";
+  ctx.beginPath(); ctx.ellipse(0, -17, 7, 8, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = "#2e2010";
+  ctx.beginPath(); ctx.ellipse(0, -22, 3.4, 3, 0, 0, 7); ctx.fill();
+  // добыча в когтях
+  if (E.carrying) {
+    const sp = ANIMALS[E.carrying];
+    ctx.fillStyle = sp.body;
+    ctx.beginPath(); ctx.ellipse(0, 26, 9, 6, 0.2, 0, 7); ctx.fill();
+    ctx.fillStyle = sp.detail;
+    ctx.beginPath(); ctx.ellipse(3, 25, 3.5, 2.2, 0.2, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+  // тень на земле
+  const sh = project(E.x, E.z, 0);
+  if (sh) {
+    ctx.fillStyle = `rgba(20,16,8,${Math.max(0.06, 0.3 - E.alt / 1200)})`;
+    ctx.beginPath();
+    ctx.ellipse(W / 2, sh.y, Math.max(6, 34 * sh.s * 3), Math.max(2, 10 * sh.s * 3), 0, 0, 7);
+    ctx.fill();
+  }
+}
+
+function drawVisionFx() {
+  if (!E.vision) return;
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.75);
+  g.addColorStop(0, "rgba(26,42,66,0)");
+  g.addColorStop(1, "rgba(10,18,34,.55)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(232,192,90,.5)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, H * 0.32, 0, 7); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - H * 0.36, H / 2); ctx.lineTo(W / 2 - H * 0.28, H / 2);
+  ctx.moveTo(W / 2 + H * 0.28, H / 2); ctx.lineTo(W / 2 + H * 0.36, H / 2);
+  ctx.moveTo(W / 2, H / 2 - H * 0.36); ctx.lineTo(W / 2, H / 2 - H * 0.28);
+  ctx.stroke();
+}
+
+/* ---------- кадр ---------- */
+function frame(dtMs) {
+  const slow = E.vision ? 0.45 : 1;
+  const dt = Math.min(dtMs, 50) / 1000 * slow;
+  G.t += dt;
+
+  if (G.state === "fly") {
+    updateEagle(dt);
+    updateAnimals(dt);
+  }
+
+  drawSkyGround();
+
+  // объекты мира: painter's algorithm
+  const items = [];
+  for (const d of decors) {
+    const p = project(d.x, d.z);
+    if (p && p.s > 0.018 && p.x > -160 && p.x < W + 160) items.push({ kind: "decor", o: d, p });
+  }
+  for (const a of animals) {
+    if (a.state === "gone") continue;
+    const p = project(a.x, a.z);
+    if (p && p.s > 0.03 && p.x > -80 && p.x < W + 80) items.push({ kind: "animal", o: a, p });
+  }
+  const hp = project(0, 0);
+  if (hp && hp.s > 0.02) items.push({ kind: "hunter", p: hp });
+  items.sort((i1, i2) => (i1.o && i1.o.type === "lake" ? 1e9 : i1.p.rz) - (i2.o && i2.o.type === "lake" ? 1e9 : i2.p.rz));
+  items.reverse();
+  for (const it of items) {
+    if (it.kind === "decor") drawDecor(it.o, it.p);
+    else if (it.kind === "animal") drawAnimal(it.o, it.p);
+    else drawHunter(it.p);
+  }
+
+  if (G.state === "fly" || G.state === "menu") drawEagle();
+  drawVisionFx();
+
+  // HUD
+  elCoins.textContent = `🪙 ${G.coins}`;
+  elFocus.style.width = `${E.focus * 100}%`;
+  elCarry.style.opacity = E.carrying ? 1 : 0;
+  if (E.carrying) elCarry.textContent = `в когтях: ${ANIMALS[E.carrying].name} → неси охотнику`;
+  if (E.carrying) {
+    const dx = wrap(0 - E.x), dz = wrap(0 - E.z);
+    const ang = Math.atan2(dx, dz) - E.heading;
+    elArrow.style.opacity = 0.9;
+    elArrow.style.transform = `translateX(-50%) rotate(${ang}rad)`;
+  } else {
+    elArrow.style.opacity = 0;
+  }
+}
+
+let lastT = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (!lastT) lastT = ts;
+  const dtMs = ts - lastT;
+  lastT = ts;
+  frame(dtMs);
+}
+requestAnimationFrame(loop);
+
+/* ---------- запуск ---------- */
+renderMenu();
+elLoc.textContent = LOCS[G.locKey].name;
+buildWorld();
+
+/* debug: #demo — сразу полёт, #loc-charyn и т.п., #vision, #coins500, #ffN */
+if (location.hash.includes("demo")) {
+  const m = /loc-(\w+)/.exec(location.hash);
+  if (m && LOCS[m[1]]) { G.locKey = m[1]; }
+  const c = /coins(\d+)/.exec(location.hash);
+  if (c) { G.coins = +c[1]; }
+  startFlight();
+  menu.style.display = "none";
+  if (location.hash.includes("vision")) { E.vision = true; E.focus = 1; }
+  const ff = /ff(\d+)/.exec(location.hash);
+  if (ff) for (let i = 0; i < +ff[1]; i++) frame(16.7);
+}
+</script>
+</body>
+</html>
