@@ -1,0 +1,20 @@
+{
+  "name": "berkutchi",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes http-server . -p 4173 -c-1",
+    "test": "vitest run",
+    "test:browser": "node scripts/browser-smoke.mjs",
+    "check": "npm test && node scripts/validate-content.mjs",
+    "terrain:fetch": "node scripts/fetch-terrain.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0",
+    "vitest": "^5.0.0"
+  }
+}

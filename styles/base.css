@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+  --ink: #f3efe3;
+  --muted: #a9aea3;
+  --gold: #e2bd68;
+  --gold-deep: #ad7b2c;
+  --green: #6e8d61;
+  --panel: rgba(17, 24, 20, 0.82);
+  --panel-solid: #171f19;
+  --line: rgba(241, 235, 215, 0.16);
+  --danger: #c96855;
+}
+* { box-sizing: border-box; }
+html { min-height: 100%; background: #0b100d; }
+body {
+  min-height: 100%; margin: 0; color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 74% 0%, rgba(104,128,92,.2), transparent 36rem), linear-gradient(145deg, #111913, #0b100d 60%);
+}
+button, a { font: inherit; }
+a { color: inherit; }
+h1, h2, h3, p { margin-top: 0; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; }
+.eyebrow { margin-bottom: .55rem; color: var(--gold); font-size: .72rem; font-weight: 750; letter-spacing: .2em; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: .72rem 1.25rem; border: 1px solid transparent; border-radius: 999px; text-decoration: none; cursor: pointer; transition: 160ms ease; }
+.button.primary { background: var(--gold); color: #20190d; font-weight: 800; }
+.button.primary:hover { background: #f0cf81; transform: translateY(-1px); }
+.button.secondary { border-color: var(--line); background: rgba(255,255,255,.055); }
+.button.secondary:hover { border-color: rgba(226,189,104,.55); background: rgba(226,189,104,.08); }
+.button:disabled { opacity: .42; cursor: default; transform: none; }
+.text-link { color: var(--muted); text-underline-offset: .25em; }
+.glass-panel { border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(14px); box-shadow: 0 10px 35px rgba(0,0,0,.2); }
+.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin: 4rem 0 1.4rem; }
+.section-heading h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.7rem); }
+.section-heading > p { max-width: 34rem; margin: 0; color: var(--muted); line-height: 1.6; }
+@media (max-width: 700px) { .section-heading { align-items: start; flex-direction: column; gap: .6rem; margin-top: 3rem; } }

@@ -28,5 +28,5 @@
   window.addEventListener("unhandledrejection", function (e) {
     errors.push("promise: " + (e.reason && (e.reason.message || String(e.reason))));
   });
-  setTimeout(function () { if (!window.__bkOK) { window.__bkFailedFast = 1; overlay(); } }, 7000);
+  setTimeout(function () { if (!window.__bkOK) { window.__bkFailedFast = 1; overlay(); } }, 20000);
 })();

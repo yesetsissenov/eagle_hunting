@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121813">
+  <title>Коллекция — Беркутчи</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/collection.css">
+</head>
+<body>
+  <main class="collection-shell">
+    <header class="page-header">
+      <a class="back-link" href="./index.html">← Карта земель</a>
+      <div><p class="eyebrow">ДНЕВНИК БЕРКУТЧИ</p><h1>Коллекция и выучка</h1></div>
+      <div class="wallet" id="wallet"></div>
+    </header>
+
+    <section class="upgrade-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">ВЫУЧКА</p><h2>Развивай беркута</h2></div>
+        <p>Монеты влияют на стиль полёта, но не закрывают доступ к новым землям.</p>
+      </div>
+      <div class="upgrade-grid" id="upgradeGrid"></div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <div><p class="eyebrow">ВИДЫ</p><h2>Полевой дневник</h2></div>
+        <p>Охраняемые животные появляются только для наблюдения и никогда не становятся целью охоты.</p>
+      </div>
+      <div class="animal-grid" id="animalGrid"></div>
+    </section>
+
+    <section>
+      <div class="section-heading"><div><p class="eyebrow">МАСТЕРСТВО</p><h2>Испытания земель</h2></div></div>
+      <div class="mastery-grid" id="masteryGrid"></div>
+    </section>
+  </main>
+  <script type="module" src="./src/ui/collection.js"></script>
+</body>
+</html>

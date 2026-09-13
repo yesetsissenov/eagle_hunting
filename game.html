@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b1212">
+  <title>Полёт — Беркутчи</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦅</text></svg>">
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/game.css">
+</head>
+<body class="game-body">
+  <main id="stage" aria-label="Игровой мир">
+    <canvas id="world"></canvas>
+    <canvas id="overlay"></canvas>
+
+    <section id="loading" class="loading-screen">
+      <div class="loading-mark">🦅</div>
+      <p class="eyebrow">ГОТОВИМ МАРШРУТ</p>
+      <h1 id="loadingTitle">Загрузка рельефа…</h1>
+      <div class="loading-track"><span id="loadingBar"></span></div>
+      <p id="loadingNote">Высоты построены по данным SRTM</p>
+    </section>
+
+    <section id="hud" class="hud" aria-live="polite">
+      <div class="top-left glass-panel"><strong id="locationName"></strong><span id="regionName"></span></div>
+      <div class="top-center glass-panel" id="objective"></div>
+      <div class="top-right glass-panel"><span id="coins">0 🪙</span><span id="stars">0 ★</span></div>
+      <div class="focus-meter" aria-label="Концентрация зоркого глаза"><span>ЗОРКОСТЬ</span><div><i id="focusBar"></i></div></div>
+      <div class="altimeter" aria-label="Высота"><span id="altitude">0 м</span><i id="altitudeDot"></i></div>
+      <div class="target-card glass-panel" id="targetCard"></div>
+      <div class="carry-card glass-panel" id="carryCard"></div>
+      <div class="home-bearing" id="homeBearing">⌃<span>СТОЯНКА</span></div>
+      <div class="messages" id="messages"></div>
+      <div class="desktop-help">мышь — курс и высота · W — разгон · ЛКМ/Space — пике · V — зоркий глаз</div>
+      <button class="icon-button menu-button" id="menuButton" aria-label="Пауза">☰</button>
+    </section>
+
+    <section class="touch-controls" id="touchControls" aria-label="Сенсорное управление">
+      <div class="joystick-zone" id="joystickZone">
+        <div class="joystick-base"><div class="joystick-knob" id="joystickKnob"></div></div>
+        <span>ПОЛЁТ</span>
+      </div>
+      <div class="action-stack">
+        <button class="touch-action vision-action" id="visionButton"><span>◉</span>ЗОРКИЙ ГЛАЗ</button>
+        <button class="touch-action boost-action" id="boostButton"><span>»</span>РАЗГОН</button>
+        <button class="touch-action dive-action" id="diveButton"><span>⌄</span>ПИКЕ</button>
+      </div>
+    </section>
+
+    <section class="pause-panel" id="pausePanel" hidden>
+      <div class="pause-card">
+        <p class="eyebrow">ПОЛЁТ ПРИОСТАНОВЛЕН</p>
+        <h2 id="pauseTitle">Беркутчи</h2>
+        <div class="challenge-list" id="challengeList"></div>
+        <button class="button primary" id="continueButton">Продолжить</button>
+        <a class="button secondary" href="./index.html">К выбору земли</a>
+        <a class="text-link" href="./collection.html">Коллекция и выучка</a>
+      </div>
+    </section>
+  </main>
+  <script src="./diag.js"></script>
+  <script type="importmap">
+    { "imports": { "three": "./three.module.js" } }
+  </script>
+  <script type="module" src="./src/game/main.js"></script>
+</body>
+</html>
