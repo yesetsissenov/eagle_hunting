@@ -6,15 +6,54 @@ import { clone as cloneSkeleton } from "../vendor/SkeletonUtils.js";
 const externalLoader = new GLTFLoader();
 const externalTemplates = new Map();
 const EXTERNAL_MODELS = {
-  fieldMouse: "rat",
-  dwarfHamster: "rat",
-  waterVole: "rat",
+  fieldMouse: "mouse-real",
+  dwarfHamster: "hamster-real",
+  suslik: "marmot",
   marmot: "marmot",
-  korsak: "fox",
-  redFox: "fox",
-  mallard: "duck",
-  ibex: "goat",
-  argali: "goat",
+  pika: "hamster-real",
+  waterVole: "mouse-real",
+  redSquirrel: "squirrel-real",
+  tolaiHare: "hare-real",
+  mountainHare: "hare-real",
+  korsak: "fox-real",
+  redFox: "fox-real",
+  badger: "badger-real",
+  steppePolecat: "ferret-real",
+  stoneMarten: "ferret-real",
+  chukar: "quail-real",
+  pheasant: "pheasant-real",
+  greyPartridge: "quail-real",
+  sandgrouse: "quail-real",
+  mallard: "mallard-real",
+  saiga: "saiga-real",
+  kulan: "donkey-real",
+  ibex: "ibex-real",
+  argali: "argali-real",
+  flamingo: "flamingo-real",
+  demoiselleCrane: "crane-real",
+  maral: "deer-real",
+  snowLeopard: "snow-leopard-real",
+};
+
+const MODEL_HEIGHT = {
+  "mouse-real": 1.35,
+  "hamster-real": 1.25,
+  "squirrel-real": 1.7,
+  "hare-real": 2.05,
+  "fox-real": 2.05,
+  "badger-real": 1.55,
+  "ferret-real": 1.3,
+  "quail-real": 1.35,
+  "pheasant-real": 1.55,
+  "mallard-real": 1.55,
+  "saiga-real": 2.15,
+  "donkey-real": 2.2,
+  "ibex-real": 2.2,
+  "argali-real": 2.25,
+  "flamingo-real": 2.6,
+  "crane-real": 2.65,
+  "deer-real": 2.25,
+  "snow-leopard-real": 1.65,
 };
 
 async function loadExternalModel(key) {
@@ -43,7 +82,7 @@ function createExternalAnimal(id, animal) {
   const box = new THREE.Box3().setFromObject(asset);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
-  const normalizedHeight = key === "duck" ? 1.8 : 2.2;
+  const normalizedHeight = MODEL_HEIGHT[key] ?? (key === "duck" ? 1.8 : 2.2);
   const modelScale = normalizedHeight / Math.max(size.y, .001);
   asset.scale.multiplyScalar(modelScale);
   asset.position.set(-center.x * modelScale, -box.min.y * modelScale, -center.z * modelScale);
@@ -65,8 +104,36 @@ function createExternalAnimal(id, animal) {
     active: null,
     lastTime: null,
   };
+  group.userData.motionSeed = [...id].reduce((sum, letter) => sum + letter.charCodeAt(0), 0) * .017;
   group.scale.multiplyScalar(animal.size);
   return group;
+}
+
+function bakeSkinnedScene(source) {
+  source.updateMatrixWorld(true);
+  const baked = new THREE.Group();
+  const vertex = new THREE.Vector3();
+  source.traverse((child) => {
+    if (!child.isMesh) return;
+    const geometry = child.geometry.clone();
+    const position = geometry.attributes.position;
+    for (let index = 0; index < position.count; index += 1) {
+      if (child.isSkinnedMesh) child.getVertexPosition(index, vertex);
+      else vertex.fromBufferAttribute(position, index);
+      vertex.applyMatrix4(child.matrixWorld);
+      position.setXYZ(index, vertex.x, vertex.y, vertex.z);
+    }
+    geometry.deleteAttribute("skinIndex");
+    geometry.deleteAttribute("skinWeight");
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const materials = (Array.isArray(child.material) ? child.material : [child.material]).map((item) => item.clone());
+    const mesh = new THREE.Mesh(geometry, Array.isArray(child.material) ? materials : materials[0]);
+    mesh.name = child.name;
+    baked.add(mesh);
+  });
+  return baked;
 }
 
 function standard(color, options = {}) {
@@ -137,7 +204,7 @@ function createWing(side, lightMaterial, darkMaterial) {
   return wing;
 }
 
-export function createEagle(featherTexture = null) {
+function createProceduralEagle(featherTexture = null) {
   const group = new THREE.Group();
   group.name = "golden-eagle";
   const bodyMaterial = standard(0x382a20);
@@ -219,6 +286,55 @@ export function createEagle(featherTexture = null) {
   };
   group.scale.setScalar(1.02);
   return group;
+}
+
+export async function createEagle(featherTexture = null) {
+  try {
+    const cached = await loadExternalModel("golden-eagle");
+    const rig = cloneSkeleton(cached.scene);
+    const flight = cached.animations.find((clip) => /fly/i.test(clip.name)) ?? cached.animations[0];
+    if (flight) {
+      const poseMixer = new THREE.AnimationMixer(rig);
+      poseMixer.clipAction(flight).play();
+      poseMixer.setTime(flight.duration * .18);
+      rig.updateMatrixWorld(true);
+    }
+    const asset = bakeSkinnedScene(rig);
+    const box = new THREE.Box3().setFromObject(asset);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const scale = 7.4 / Math.max(size.x, size.z, .001);
+    asset.scale.multiplyScalar(scale);
+    const restPosition = new THREE.Vector3(-center.x * scale, -center.y * scale - .2, -center.z * scale);
+    asset.position.copy(restPosition);
+    asset.rotation.y = Math.PI;
+    asset.traverse((child) => {
+      if (!child.isMesh) return;
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if (child.material) {
+        child.material = child.material.clone();
+        child.material.roughness = .82;
+        child.material.color?.set(0x9b7045);
+        child.material.emissive = new THREE.Color(0x24170d);
+        child.material.emissiveIntensity = .32;
+      }
+    });
+
+    const group = new THREE.Group();
+    group.name = "golden-eagle";
+    group.add(asset);
+    group.userData.eagleSource = "rigged-golden-eagle-glb";
+    group.userData.animate = ({ time, diving = false, speed = 40 }) => {
+      const beat = Math.sin(time * (diving ? 2.2 : 4.8 + speed * .012));
+      asset.position.y = restPosition.y + beat * (diving ? .035 : .11);
+      asset.rotation.z = beat * (diving ? .008 : .022);
+    };
+    return group;
+  } catch (error) {
+    console.warn("Rigged eagle model unavailable, using embedded fallback", error);
+    return createProceduralEagle(featherTexture);
+  }
 }
 
 function createHare(animal) {
@@ -476,6 +592,9 @@ export function animateAnimal(model, time, moving = true) {
     const dt = external.lastTime === null ? 0 : THREE.MathUtils.clamp(time - external.lastTime, 0, .05);
     external.lastTime = time;
     external.mixer.update(dt);
+    const phase = time * (moving ? 7.5 : 2.2) + model.userData.motionSeed;
+    model.position.y += Math.abs(Math.sin(phase)) * (moving ? .09 : .025);
+    model.rotation.z = Math.sin(phase * .5) * (moving ? .025 : .008);
     return;
   }
   const parts = model.userData.parts;

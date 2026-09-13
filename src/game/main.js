@@ -57,7 +57,7 @@ renderer.shadowMap.enabled = !mobile;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 if ("outputColorSpace" in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.16;
 
 const scene = new THREE.Scene();
 scene.background = createSkyBackground(gameLocation);
@@ -411,7 +411,7 @@ async function boot() {
       loadingNote.textContent = note;
     },
   });
-  const eagleModel = createEagle(await featherTexturePromise);
+  const eagleModel = await createEagle(await featherTexturePromise);
   eagle.model = eagleModel;
   scene.add(eagleModel);
   eagle.position.set(0, world.heightAt(0, -48) + 48, -48);
@@ -428,7 +428,14 @@ async function boot() {
   message("Левый стик управляет полётом. Зоркий глаз включается одним нажатием.", true);
   window.__bkOK = true;
   document.querySelector("#bk-diag")?.remove();
-  window.__bkGame = { location: gameLocation.id, terrainSource: world.terrainSource, externalAnimalCount: world.externalAnimalCount, state };
+  window.__bkGame = {
+    location: gameLocation.id,
+    terrainSource: world.terrainSource,
+    externalAnimalCount: world.externalAnimalCount,
+    eagleSource: eagleModel.userData.eagleSource ?? "procedural-fallback",
+    vegetationLayers: world.root.getObjectByName("vegetation")?.children.length ?? 0,
+    state,
+  };
   requestAnimationFrame(loop);
 }
 

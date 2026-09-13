@@ -9,11 +9,26 @@ for (const page of requiredPages) {
 
 const requiredAssets = [
   "assets/textures/kazakhstan-ground-atlas.webp",
-  "assets/models/rat.glb",
+  "assets/models/golden-eagle.glb",
+  "assets/models/mouse-real.glb",
+  "assets/models/hamster-real.glb",
+  "assets/models/squirrel-real.glb",
+  "assets/models/hare-real.glb",
   "assets/models/marmot.glb",
-  "assets/models/duck.glb",
-  "assets/models/goat.glb",
-  "assets/models/fox.glb",
+  "assets/models/fox-real.glb",
+  "assets/models/badger-real.glb",
+  "assets/models/ferret-real.glb",
+  "assets/models/quail-real.glb",
+  "assets/models/pheasant-real.glb",
+  "assets/models/mallard-real.glb",
+  "assets/models/saiga-real.glb",
+  "assets/models/donkey-real.glb",
+  "assets/models/ibex-real.glb",
+  "assets/models/argali-real.glb",
+  "assets/models/flamingo-real.glb",
+  "assets/models/crane-real.glb",
+  "assets/models/deer-real.glb",
+  "assets/models/snow-leopard-real.glb",
 ];
 for (const asset of requiredAssets) {
   const url = new URL(`../${asset}`, import.meta.url);

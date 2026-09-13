@@ -1,8 +1,7 @@
 # Animal model sources
 
-The game ships the following self-contained binary glTF assets:
+The game ships self-contained binary glTF assets. The earlier animated Gobkit packs are CC0 1.0; `fox.glb` comes from the Khronos glTF Sample Assets repository under its credited CC0/CC BY 4.0 terms.
 
-- `rat.glb`, `marmot.glb`, `duck.glb`, `goat.glb` — Gobkit Free Animal Packs, CC0 1.0. Source metadata and permanent download URLs: https://gobkit.com/api/free
-- `fox.glb` — Khronos glTF Sample Assets. The original PixelMannen model is CC0; rigging/animation by tomkranis and the glTF conversion by Asobo Studio/scurest are CC BY 4.0. Source and full credits: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox
+The current fauna set uses individually recognisable models from Poly Pizza. `golden-eagle.glb` is “Hawk Lp Rigged” by Sherkiz, CC BY 3.0. `donkey-real.glb` is Donkey by Quaternius, CC0 1.0. The other `*-real.glb` files are CC BY 3.0. Exact model pages and credits are in `ATTRIBUTION.md`.
 
 The models are loaded locally; playing the game does not request them from third-party servers.

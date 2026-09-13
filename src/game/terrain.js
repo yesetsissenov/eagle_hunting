@@ -73,6 +73,54 @@ function surfaceDetail(location, x, z) {
   return broad * 1.8 + fine;
 }
 
+function bell(value, width) {
+  return Math.exp(-((value / width) ** 2));
+}
+
+function signatureRelief(location, x, z) {
+  const landmark = location.landmark;
+  if (landmark === "castleValley") {
+    const channel = Math.sin(z * .0065) * 48 + Math.sin(z * .017) * 17;
+    const distance = Math.abs(x - channel);
+    const floor = -34 * bell(distance, 48);
+    const shoulder = 27 * bell(distance - 105, 62);
+    const towers = Math.max(0, Math.sin(z * .024 + x * .009)) * bell(distance - 150, 75) * 13;
+    return floor + shoulder + towers;
+  }
+  if (landmark === "singingDune") {
+    const dx = x - 270;
+    const dz = z - 205;
+    const along = dx * .82 + dz * .57;
+    const across = -dx * .57 + dz * .82;
+    const main = 48 * bell(along, 310) * bell(across, 52);
+    const lee = 16 * bell(along - 40, 270) * bell(across - 82, 88);
+    return main + lee;
+  }
+  if (landmark === "chink") {
+    const edge = 360 + Math.sin(x * .006) * 52;
+    return (Math.tanh((z - edge) / 42) + 1) * 34 + Math.sin(x * .023) * bell(z - edge, 95) * 7;
+  }
+  if (landmark === "bozzhyraFangs") {
+    const edge = 390 + Math.sin(x * .0055) * 68;
+    const escarpment = (Math.tanh((z - edge) / 48) + 1) * 39;
+    const mesaA = 56 * bell(x - 285, 85) * bell(z - 205, 62);
+    const mesaB = 38 * bell(x + 230, 125) * bell(z - 80, 92);
+    return escarpment + mesaA + mesaB;
+  }
+  if (["snowPeaks", "threeLakes", "sunkenForest", "altaiGlacier"].includes(landmark)) {
+    const distance = Math.hypot(x, z);
+    const valleyWalls = Math.max(0, (distance - 330) / 470) ** 1.45 * 58;
+    const ridges = Math.max(0, Math.sin(Math.atan2(z, x) * 7 + distance * .011)) * Math.max(0, distance - 380) * .045;
+    return valleyWalls + ridges;
+  }
+  if (landmark === "braidedRiver") {
+    const channel = Math.sin(z * .008) * 95 + Math.sin(z * .021) * 22;
+    return -9 * bell(x - channel, 82);
+  }
+  if (landmark === "wetlandPools" || landmark === "balkhashShore") return -Math.max(0, Math.hypot(x, z) - 520) * .004;
+  return 0;
+}
+
 function flattenCamp(height, x, z) {
   const distance = Math.hypot(x, z);
   if (distance >= 72) return height;
@@ -134,9 +182,9 @@ export async function createTerrain(location, { mobile = false, onProgress } = {
   const scale = verticalScale(location);
 
   const rawHeightAt = (x, z) => {
-    if (!mosaic) return fallbackElevation(location, x, z);
+    if (!mosaic) return fallbackElevation(location, x, z) + signatureRelief(location, x, z);
     const elevation = readElevation(mosaic, centerX + x * pixelsPerGameUnit, centerY + z * pixelsPerGameUnit);
-    return (elevation - baseElevation) * scale + surfaceDetail(location, x, z);
+    return (elevation - baseElevation) * scale + surfaceDetail(location, x, z) + signatureRelief(location, x, z);
   };
   const heightAt = (x, z) => flattenCamp(rawHeightAt(x, z), x, z);
 

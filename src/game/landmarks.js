@@ -35,6 +35,126 @@ function rock(location, radius, height, sides = 9, color = location.palette.rock
   return mesh;
 }
 
+function mountainPeak(location, random, radius, height, color = location.palette.rock) {
+  const segments = 18;
+  const levels = [0, .2, .43, .64, .81, .93, 1];
+  const vertices = [];
+  const colors = [];
+  const indices = [];
+  const tint = new THREE.Color(color);
+  if (["alpine", "alpineLake", "altai", "lakeGranite"].includes(location.terrain)) tint.lerp(new THREE.Color(0x9aa49b), .22);
+  const profile = Array.from({ length: segments }, (_, index) => 1 + Math.sin(index * 2.17 + random() * .25) * .12 + randomBetween(random, -.08, .08));
+  let driftX = 0;
+  let driftZ = 0;
+  for (let level = 0; level < levels.length; level += 1) {
+    const t = levels[level];
+    const ringRadius = (1 - t) ** .72;
+    driftX += randomBetween(random, -.035, .035) * radius;
+    driftZ += randomBetween(random, -.03, .03) * radius;
+    for (let segment = 0; segment < segments; segment += 1) {
+      const angle = segment / segments * Math.PI * 2;
+      const crag = profile[segment] * (1 + Math.sin(segment * 3.1 + level) * .035);
+      vertices.push(Math.cos(angle) * radius * ringRadius * crag + driftX, t * height, Math.sin(angle) * radius * ringRadius * crag + driftZ);
+      const shade = tint.clone().offsetHSL(0, 0, (t - .45) * .11 + Math.sin(angle) * .035);
+      colors.push(shade.r, shade.g, shade.b);
+      if (level < levels.length - 1) {
+        const a = level * segments + segment;
+        const b = level * segments + (segment + 1) % segments;
+        const c = (level + 1) * segments + segment;
+        const d = (level + 1) * segments + (segment + 1) % segments;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const peak = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .97, flatShading: true }));
+  peak.castShadow = true;
+  peak.receiveShadow = true;
+  return peak;
+}
+
+function ribbonMesh(location, heightAt, { width, color, opacity = 1, offset = 0, phase = 0, lift = .32, points = 72 }) {
+  const vertices = [];
+  const indices = [];
+  for (let index = 0; index < points; index += 1) {
+    const z = -860 + index / (points - 1) * 1720;
+    const x = offset + Math.sin(z * .0048 + phase) * 82 + Math.sin(z * .013 - phase) * 18;
+    const nextZ = z + 1;
+    const nextX = offset + Math.sin(nextZ * .0048 + phase) * 82 + Math.sin(nextZ * .013 - phase) * 18;
+    const length = Math.hypot(nextX - x, nextZ - z) || 1;
+    const nx = (nextZ - z) / length * width;
+    const nz = -(nextX - x) / length * width;
+    vertices.push(x + nx, heightAt(x + nx, z + nz) + lift, z + nz, x - nx, heightAt(x - nx, z - nz) + lift, z - nz);
+    if (index < points - 1) {
+      const a = index * 2;
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, roughness: 1, transparent: opacity < 1, opacity, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 }));
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function addRoad(group, location, heightAt) {
+  const wilderness = ["alpine", "alpineLake", "altai", "chalkPlateau"].includes(location.terrain);
+  const dry = ["desert", "canyon", "chalkPlateau", "shore"].includes(location.terrain);
+  const phase = (location.id.length * .73) % Math.PI;
+  const offset = location.landmark === "castleValley" ? -20 : location.landmark === "singingDune" ? -115 : 22;
+  const width = wilderness ? 3.4 : 6.2;
+  group.add(ribbonMesh(location, heightAt, { width, color: dry ? 0x96714f : 0x806b4c, opacity: .94, offset, phase, lift: .28 }));
+  if (!wilderness) {
+    group.add(ribbonMesh(location, heightAt, { width: .46, color: 0x554535, opacity: .72, offset: offset - width * .52, phase, lift: .36 }));
+    group.add(ribbonMesh(location, heightAt, { width: .46, color: 0x554535, opacity: .72, offset: offset + width * .52, phase, lift: .36 }));
+  }
+}
+
+function addCliffCorridor(group, location, heightAt, random, { chalk = false, oneSided = false } = {}) {
+  const colors = chalk ? [0xd8d1bd, 0xbeb49d, 0xeee9da] : [0x87472f, 0xa95d3c, 0xc27a50];
+  const sides = oneSided ? [1] : [-1, 1];
+  for (const side of sides) {
+    for (let band = 0; band < 3; band += 1) {
+      const vertices = [];
+      const indices = [];
+      const points = 58;
+      for (let index = 0; index < points; index += 1) {
+        const z = -830 + index / (points - 1) * 1660;
+        const center = Math.sin(z * .0065) * (oneSided ? 72 : 48) + Math.sin(z * .017) * 15;
+        const x = center + side * (oneSided ? 330 + band * 34 : 95 + band * 34) + Math.sin(index * .77 + band) * 6;
+        const base = heightAt(x, z) - 5 + band * 9;
+        const height = (oneSided ? 58 : 34) - band * 7 + Math.sin(index * .63 + band) * 7;
+        vertices.push(x, base, z, x + side * (20 + band * 5), base + height, z);
+        if (index < points - 1) {
+          const a = index * 2;
+          indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      const wall = new THREE.Mesh(geometry, material(colors[band]));
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      group.add(wall);
+    }
+    for (let index = 0; index < 18; index += 1) {
+      const z = randomBetween(random, -780, 780);
+      const center = Math.sin(z * .0065) * (oneSided ? 72 : 48) + Math.sin(z * .017) * 15;
+      const peak = mountainPeak(location, random, randomBetween(random, 12, 27), randomBetween(random, 38, 92), colors[index % colors.length]);
+      place(peak, center + side * (oneSided ? randomBetween(random, 315, 395) : randomBetween(random, 118, 180)), z, heightAt, -3);
+      group.add(peak);
+    }
+  }
+}
+
 function layeredButte(location, scale = 1, chalk = false) {
   const group = new THREE.Group();
   const colors = chalk
@@ -183,24 +303,24 @@ function waterRibbon(location, heightAt, offset = 0, width = 22) {
 }
 
 function addMountainWall(group, location, heightAt, random, { snow = false, chalk = false } = {}) {
-  for (let index = 0; index < 14; index += 1) {
-    const angle = index / 14 * Math.PI * 2 + randomBetween(random, -0.12, 0.12);
-    const distance = randomBetween(random, 660, 830);
-    const height = randomBetween(random, 70, 180);
-    const radius = randomBetween(random, 45, 110);
+  for (let index = 0; index < 21; index += 1) {
+    const angle = index / 21 * Math.PI * 2 + randomBetween(random, -.1, .1);
+    const distance = randomBetween(random, 480, 820);
+    const height = randomBetween(random, 105, 245);
+    const radius = randomBetween(random, 70, 155);
     let peak;
     if (chalk) {
       peak = erodedMesa(location, random, randomBetween(random, 2.3, 4.2), true);
       peak.scale.set(randomBetween(random, 1.4, 2.8), randomBetween(random, .75, 1.45), randomBetween(random, .7, 1.25));
     } else {
-      peak = rock(location, radius, height, 7, location.palette.rock);
+      peak = mountainPeak(location, random, radius, height, location.palette.rock);
     }
     place(peak, Math.sin(angle) * distance, Math.cos(angle) * distance, heightAt, -3);
     peak.rotation.y = random() * Math.PI;
     group.add(peak);
-    if (!chalk && snow && height > 118) {
-      const cap = rock(location, radius * 0.43, height * 0.3, 7, 0xe8ece9);
-      cap.position.set(peak.position.x, peak.position.y + height * 0.69, peak.position.z);
+    if (!chalk && snow && height > 145) {
+      const cap = mountainPeak(location, random, radius * .34, height * .24, 0xe8ece9);
+      cap.position.set(peak.position.x, peak.position.y + height * .74, peak.position.z);
       cap.rotation.y = peak.rotation.y;
       group.add(cap);
     }
@@ -251,38 +371,32 @@ export function createLandmarks(location, heightAt) {
     addMountainWall(group, location, heightAt, random, { snow: true });
   }
   if (location.landmark === "threeLakes") {
-    group.add(ellipseWater(location, heightAt, 240, 120, 145, 54, .65));
+    group.add(ellipseWater(location, heightAt, 95, 145, 225, 82, .28));
     group.add(ellipseWater(location, heightAt, -250, -80, 115, 46, -.4));
     group.add(ellipseWater(location, heightAt, 80, -430, 86, 38, .25));
     addMountainWall(group, location, heightAt, random, { snow: true });
   }
   if (location.landmark === "sunkenForest") {
-    group.add(ellipseWater(location, heightAt, 260, 170, 180, 74, .55));
+    group.add(ellipseWater(location, heightAt, 95, 155, 220, 88, .3));
     for (let index = 0; index < 34; index += 1) {
-      const x = 260 + randomBetween(random, -145, 145);
-      const z = 170 + randomBetween(random, -48, 48);
+      const x = 95 + randomBetween(random, -180, 180);
+      const z = 155 + randomBetween(random, -62, 62);
       group.add(place(makeDeadTree(random, randomBetween(random, 7, 15)), x, z, heightAt, .9));
     }
     addMountainWall(group, location, heightAt, random, { snow: false });
   }
   if (location.landmark === "castleValley") {
-    for (let index = 0; index < 30; index += 1) {
+    addCliffCorridor(group, location, heightAt, random);
+    for (let index = 0; index < 18; index += 1) {
       const side = index % 2 ? 1 : -1;
-      const x = side * randomBetween(random, 120, 300);
+      const x = side * randomBetween(random, 145, 265);
       const z = randomBetween(random, -720, 720);
-      const tower = layeredButte(location, randomBetween(random, .55, 1.15));
-      tower.scale.x = randomBetween(random, .55, 1.1);
+      const tower = erodedMesa(location, random, randomBetween(random, .5, 1.05));
+      tower.scale.x = randomBetween(random, .48, .9);
       group.add(place(tower, x, z, heightAt));
     }
   }
   if (location.landmark === "singingDune") {
-    for (let index = 0; index < 5; index += 1) {
-      const dune = new THREE.Mesh(new THREE.SphereGeometry(1, 36, 14, 0, Math.PI * 2, 0, Math.PI / 2), material(0xd4ad70));
-      dune.scale.set(150 - index * 18, 28 - index * 2, 46 + index * 7);
-      place(dune, 270 + index * 45, 210 + index * 25, heightAt, -5);
-      dune.rotation.y = -.45;
-      group.add(dune);
-    }
     for (let index = 0; index < 8; index += 1) {
       const aktau = layeredButte(location, randomBetween(random, 1.1, 2));
       aktau.children.forEach((layer, layerIndex) => layer.material = material([0xe2c59b, 0xca8e68, 0xe4ddd0, 0xaa6954][layerIndex % 4]));
@@ -302,13 +416,15 @@ export function createLandmarks(location, heightAt) {
   }
   if (location.landmark === "altaiGlacier") addMountainWall(group, location, heightAt, random, { snow: true });
   if (location.landmark === "chink") {
-    for (let index = 0; index < 14; index += 1) {
-      const butte = layeredButte(location, randomBetween(random, 1.3, 2.3), true);
-      butte.scale.x = randomBetween(random, 1.2, 2.4);
+    addCliffCorridor(group, location, heightAt, random, { chalk: true, oneSided: true });
+    for (let index = 0; index < 9; index += 1) {
+      const butte = erodedMesa(location, random, randomBetween(random, 1.8, 3.4), true);
+      butte.scale.x = randomBetween(random, 1.5, 2.8);
       group.add(place(butte, -670 + index * 100, 420 + Math.sin(index * .8) * 100, heightAt));
     }
   }
   if (location.landmark === "bozzhyraFangs") {
+    addCliffCorridor(group, location, heightAt, random, { chalk: true, oneSided: true });
     addMountainWall(group, location, heightAt, random, { chalk: true });
     for (const [x, z, scale] of [[260, 180, 1.2], [300, 205, .95]]) {
       const fang = rock(location, 13 * scale, 96 * scale, 7, 0xe8e3d5);
@@ -326,5 +442,6 @@ export function createLandmarks(location, heightAt) {
     group.add(place(makeYurt(1), -22, 18, heightAt));
     group.add(place(makeYurt(.74), 18, 26, heightAt));
   }
+  addRoad(group, location, heightAt);
   return group;
 }

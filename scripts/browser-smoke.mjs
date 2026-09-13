@@ -67,11 +67,15 @@ try {
     terrain: window.__bkGame.terrainSource,
     location: window.__bkGame.location,
     externalAnimalCount: window.__bkGame.externalAnimalCount,
+    eagleSource: window.__bkGame.eagleSource,
+    vegetationLayers: window.__bkGame.vegetationLayers,
     canvas: [document.querySelector("#world").width, document.querySelector("#world").height],
   }));
   assert(desktopState.terrain.includes("SRTM"), "Desktop game must use SRTM terrain");
   assert(desktopState.location === "saryarka", "Desktop game opened the wrong location");
-  assert(desktopState.externalAnimalCount > 0, "The world must use animated GLB animal models");
+  assert(desktopState.externalAnimalCount >= 20, "Most spawned fauna must use recognisable GLB animal models");
+  assert(desktopState.eagleSource === "rigged-golden-eagle-glb", "The player must use the rigged eagle model");
+  assert(desktopState.vegetationLayers >= 7, "The world must contain layered vegetation and rocks");
   await desktop.screenshot({ path: path.join(results, "game-desktop.png") });
   assert(desktopErrors.length === 0, `Desktop console errors: ${desktopErrors.join(" | ")}`);
 
@@ -89,6 +93,9 @@ try {
     await desktop.goto(`${baseUrl}/game.html?location=${location.id}`, { waitUntil: "domcontentloaded" });
     await desktop.waitForFunction(() => window.__bkOK === true, null, { timeout: 30000 });
     assert(await desktop.evaluate(() => window.__bkGame.location) === location.id, `Failed to open ${location.id}`);
+    if (["kolsai", "charyn", "altynemel"].includes(location.id)) {
+      await desktop.screenshot({ path: path.join(results, `game-${location.id}.png`) });
+    }
   }
   assert(desktopErrors.length === 0, `Location console errors: ${desktopErrors.join(" | ")}`);
   await desktop.goto("about:blank");
